@@ -9,7 +9,9 @@ An interactive learning page for product managers about how software and AI agen
 
 ## What's in the guide
 
-The page has three modules, each on its own tab and readable on its own.
+The page opens on a landing page with the running example, the three modules with your reading progress, and a search bar. Search (press `/` or Ctrl/Cmd+K) finds any stage, section or glossary term across all modules and highlights the match on the page.
+
+The three modules each sit on their own tab and can be read on their own.
 
 | Module | What it covers |
 | --- | --- |

@@ -11,7 +11,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 DS = HERE.parent / "design-system"
 SRC = HERE / "src"
-JS_ORDER = ["helpers.js", "terms.js", "sdlc.js", "adlc.js", "compare.js", "app.js"]
+JS_ORDER = ["helpers.js", "terms.js", "sdlc.js", "adlc.js", "compare.js", "home.js", "app.js", "search.js"]
 
 
 def tokens_css():

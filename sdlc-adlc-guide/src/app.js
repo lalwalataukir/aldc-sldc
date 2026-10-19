@@ -85,6 +85,7 @@ function renderModule(m) {
   m.el = el;
   m.secEls = $$(".sec", el);
 }
+panels.appendChild(renderHome());
 MODULES.forEach(renderModule);
 
 /* ---------- Tabs, rail, progress ---------- */
@@ -94,32 +95,52 @@ const railCount = $("#railCount");
 const bar = $("#progressBar");
 const read = new Set(store.get("sldc.read", []));
 const scrollPos = {};
-let cur = null;
+let cur = null;       // the open module, or null on the home page
+let curKey = null;    // "home" or a module id
+let lastSaved = store.get("sldc.last", null);
+const homeEl = $("#panel-home");
+const railRow = $(".railrow");
 
 function railHtml(m) {
   return m.sections.map((s, i) => `<a href="#${s.id}" data-i="${i}"><span class="n">${i + 1}</span>${s.rail}<span class="rd"${read.has(s.id) ? "" : " hidden"}>✓</span></a>`).join("");
 }
+/* id is "home" or a module id */
 function setModule(id, opts = {}) {
-  const m = MODULES.find(x => x.id === id) || MODULES[0];
-  if (cur && cur !== m) scrollPos[cur.id] = window.scrollY;
+  const m = MODULES.find(x => x.id === id) || null;
+  const key = m ? m.id : "home";
+  if (curKey && curKey !== key) scrollPos[curKey] = window.scrollY;
   closePop();
   MODULES.forEach(x => { x.el.hidden = x !== m; });
+  homeEl.hidden = !!m;
+  railRow.hidden = !m;
   tabs.forEach(t => {
-    const on = t.dataset.mod === m.id;
+    const on = t.dataset.mod === key;
     t.setAttribute("aria-selected", on);
     t.tabIndex = on ? 0 : -1;
   });
-  rail.innerHTML = railHtml(m);
+  rail.innerHTML = m ? railHtml(m) : "";
   cur = m;
+  curKey = key;
+  if (!m) refreshHome(read);
   if (opts.section) {
     const target = document.getElementById(opts.section);
     if (target) target.scrollIntoView();
   } else if (opts.restore !== false) {
-    window.scrollTo(0, scrollPos[m.id] || 0);
+    window.scrollTo(0, scrollPos[key] || 0);
   }
-  if (opts.hash !== false) history.replaceState(null, "", "#" + (opts.section || m.id));
+  if (opts.hash !== false) history.replaceState(null, "", "#" + (opts.section || key));
   onScroll();
 }
+/* Follow a #hash: home, a module, or a section inside one. */
+function route(hash) {
+  const h = decodeURIComponent(hash.replace(/^#/, ""));
+  const mod = MODULES.find(m => m.id === h);
+  const owner = MODULES.find(m => m.sections.some(s => s.id === h));
+  if (mod) setModule(mod.id, { hash: false });
+  else if (owner) setModule(owner.id, { section: h, hash: false });
+  else setModule("home", { hash: false, restore: h === "home" });
+}
+window.addEventListener("hashchange", () => route(location.hash));
 tabs.forEach(t => t.addEventListener("click", () => setModule(t.dataset.mod)));
 $(".modtabs").addEventListener("keydown", e => {
   const i = tabs.indexOf(document.activeElement);
@@ -139,7 +160,7 @@ rail.addEventListener("click", e => {
   if (!a) return;
   e.preventDefault();
   const id = a.getAttribute("href").slice(1);
-  document.getElementById(id).scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  document.getElementById(id).scrollIntoView();
   history.replaceState(null, "", "#" + id);
 });
 document.addEventListener("click", e => {
@@ -153,7 +174,7 @@ function onScroll() {
   ticking = true;
   requestAnimationFrame(() => {
     ticking = false;
-    if (!cur) return;
+    if (!cur) { bar.style.width = "0%"; return; }
     const topH = $("#topbar").offsetHeight + 24;
     const vh = window.innerHeight;
     let active = 0;
@@ -161,7 +182,7 @@ function onScroll() {
     cur.secEls.forEach((s, i) => {
       const r = s.getBoundingClientRect();
       if (r.top <= topH) active = i;
-      if (r.bottom < vh * 0.6 && !read.has(s.id)) { read.add(s.id); changed = true; }
+      if (r.bottom < vh * 0.6 && r.bottom > 0 && !read.has(s.id)) { read.add(s.id); changed = true; }
     });
     const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
     if (atEnd) {
@@ -180,6 +201,8 @@ function onScroll() {
       const left = act.offsetLeft - rail.offsetLeft;
       if (left < rail.scrollLeft || left + act.offsetWidth > rail.scrollLeft + rail.clientWidth) rail.scrollLeft = left - 24;
     }
+    const activeId = cur.sections[active].id;
+    if (activeId !== lastSaved) { lastSaved = activeId; store.set("sldc.last", activeId); }
     const nRead = cur.sections.filter(s => read.has(s.id)).length;
     railCount.innerHTML = `${active + 1} / ${cur.sections.length}<span class="long"> · ${nRead} read</span>`;
     const top = cur.el.offsetTop;
@@ -295,7 +318,7 @@ function setupMap(root, stages, kind) {
       return;
     }
     const j = e.target.closest("[data-jump]");
-    if (j) { e.preventDefault(); document.getElementById(j.dataset.jump).scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); history.replaceState(null, "", "#" + j.dataset.jump); }
+    if (j) { e.preventDefault(); document.getElementById(j.dataset.jump).scrollIntoView(); history.replaceState(null, "", "#" + j.dataset.jump); }
   });
   draw();
 }
@@ -401,13 +424,5 @@ $$("[data-scenarios] .scen").forEach(card => {
   });
 });
 
-/* ---------- Start ---------- */
-(function start() {
-  const h = decodeURIComponent(location.hash.slice(1));
-  const byMod = MODULES.find(m => m.id === h);
-  const bySec = MODULES.find(m => m.sections.some(s => s.id === h));
-  if (byMod) setModule(byMod.id, { hash: false });
-  else if (bySec) setModule(bySec.id, { section: h, hash: false });
-  else setModule(store.get("sldc.module", "sdlc"), { hash: false });
-  tabs.forEach(t => t.addEventListener("click", () => store.set("sldc.module", t.dataset.mod)));
-})();
+/* ---------- Start: the landing page unless the link names a module or section ---------- */
+route(location.hash);

@@ -502,6 +502,49 @@ details.terms[open] summary{margin-bottom:14px}
 
 @media print{.topbar,.demo,.quizset,.mapper .detail .switch{display:none!important}.panel[hidden]{display:block!important}}
 
+/* ---- Landing page ---- */
+.railrow[hidden]{display:none}
+.home{display:grid;gap:56px;padding-bottom:16px}
+.home-hero{padding-block:56px 0;gap:18px}
+.home-hero h1{font-size:clamp(2.2rem,5.8vw,3.6rem);max-width:20ch}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.btnrow .btn{text-decoration:none}
+.search-hero{display:flex;align-items:center;gap:10px;width:100%;max-width:620px;min-height:48px;padding:10px 12px 10px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);font:inherit;font-size:.95rem;cursor:pointer;text-align:left}
+.search-hero:hover{border-color:var(--accent);color:var(--ink)}
+.search-hero svg{width:18px;height:18px;flex:none}
+.search-hero span{flex:1;min-width:0}
+.deep-head{display:grid;gap:6px;margin-bottom:16px}
+.deep-head h2{font-size:clamp(1.4rem,3vw,1.75rem);font-weight:750}
+.twoways .small{margin-top:10px}
+.twoways .kv{margin-top:4px}
+.mini-q{font-family:var(--font-display);font-weight:700;font-size:1.02rem}
+.modules.three{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.modules.three .module{padding:22px}
+.modules.three .num{font-size:2.6rem}
+.modules.three h2{font-size:1.3rem}
+.meter-row{display:flex;align-items:center;gap:10px}
+.meter{flex:1;height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--final)}
+.meter-row .mono{color:var(--muted);font-size:.76rem;white-space:nowrap}
+.hint-line{font-size:.88rem;color:var(--muted)}
+.how .tip kbd{font-size:.72rem}
+
+/* ---- Site search (pattern from how-ai-agents-work's search.js) ---- */
+html.gs-open{overflow:hidden}
+.gs-ov{position:fixed;inset:0;z-index:100;background:rgba(5,3,10,.62);display:flex;justify-content:center;align-items:flex-start;padding:calc(min(10vh,90px) + env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-right,0px)) 16px max(16px, env(safe-area-inset-left,0px))}
+.gs-ov[hidden]{display:none}
+.gs-box{max-height:min(76vh,720px)}
+.gs-in:focus,.gs-in:focus-visible{outline:none;box-shadow:none}
+.gs-row{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.gs-row .kind{font-size:.66rem;padding:1px 7px}
+.gs-empty{padding:16px 14px 20px;color:var(--muted);font-size:.92rem;display:grid;gap:10px}
+mark.gs-hit{background:var(--accent-soft);color:var(--ink);border-radius:3px;padding:0 1px;box-shadow:inset 0 -2px 0 var(--accent)}
+.gs-flash{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px;transition:outline-color 1.5s}
+@media (max-width:760px){.gs-btn .gs-l,.gs-btn kbd{display:none}.gs-btn{padding:6px 9px}}
+@media (max-width:600px){.gs-ov{padding:0}.gs-box{max-width:none;max-height:none;height:100%;border-radius:0;border:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}
+@media (max-width:640px){.modtab .n{display:none}.theme-btn{padding:5px 9px}.topbar-in{gap:8px}}
+@media print{.gs-ov,.gs-btn,.search-hero{display:none!important}}
+
 </style>
 <script>
   try { var t = localStorage.getItem("guides.theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
@@ -509,9 +552,10 @@ details.terms[open] summary{margin-bottom:14px}
 
 <header class="topbar" id="topbar">
   <div class="topbar-in">
-    <a class="brand" href="#sdlc">SDLC &amp; ADLC Field Guide</a>
+    <a class="brand" href="#home">SDLC &amp; ADLC Field Guide</a>
     <div class="modtabs" role="tablist" aria-label="Modules">
-      <button class="modtab" role="tab" id="tab-sdlc" aria-controls="panel-sdlc" aria-selected="true" data-mod="sdlc"><span class="n">1</span>SDLC</button>
+      <button class="modtab" role="tab" id="tab-home" aria-controls="panel-home" aria-selected="true" data-mod="home">Home</button>
+      <button class="modtab" role="tab" id="tab-sdlc" aria-controls="panel-sdlc" aria-selected="false" tabindex="-1" data-mod="sdlc"><span class="n">1</span>SDLC</button>
       <button class="modtab" role="tab" id="tab-adlc" aria-controls="panel-adlc" aria-selected="false" tabindex="-1" data-mod="adlc"><span class="n">2</span>ADLC</button>
       <button class="modtab" role="tab" id="tab-compare" aria-controls="panel-compare" aria-selected="false" tabindex="-1" data-mod="compare"><span class="n">3</span>Compare</button>
     </div>
@@ -1620,6 +1664,120 @@ MODULES.push({
   ],
 });
 
+/* The landing page: the guide's cover. A short thesis, the one feature built two ways,
+   the three modules in reading order with progress, and how to use the guide. */
+const SEARCH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>';
+
+const MODULE_CARDS = {
+  sdlc: {
+    sum: "The software development life cycle, stage by stage, through the portfolio summary screen.",
+    chips: [["requirements", "c-chain"], ["pass/fail tests", "c-obs"], ["feature flags", "c-act"]],
+    points: ["Seven stages, each with its owner, the PM's job, the output and what goes wrong", "Waterfall, Agile, Scrum and Kanban, with sprints, standups and retros", "Unit, integration, end-to-end and user acceptance testing", "Staging, feature flags, rollbacks, bug triage and versioning"],
+    meta: ["clickable lifecycle wheel", "5-question quiz", "cheat sheet"],
+  },
+  adlc: {
+    sum: "The agent development life cycle, through the portfolio assistant that answers free-form questions.",
+    chips: [["probabilistic", "c-plan"], ["evals", "c-obs"], ["guardrails", "c-act"]],
+    points: ["Eight stages, from “do we need an agent?” to monitoring", "Golden datasets, LLM-as-judge, human review and regression tests", "Seven agent risks, from hallucination to financial advice", "Traces, feedback, cost, latency and model upgrades"],
+    meta: ["clickable loop", "step-through agent trace", "5-question quiz", "cheat sheet"],
+  },
+  compare: {
+    sum: "Both lifecycles side by side, and what changes for you as the PM.",
+    chips: [["side by side", "c-chain"], ["decision guide", "c-plan"]],
+    points: ["Parallel tracks: click a stage to see its match", "Nine differences in one table", "Acceptance criteria and success metrics for both versions", "Software, an agent or both: three wealth scenarios"],
+    meta: ["clickable parallel tracks", "3 scenarios", "combined cheat sheet"],
+    hint: "Best after modules 1 and 2.",
+  },
+};
+
+function renderHome() {
+  const el = document.createElement("div");
+  el.className = "panel home";
+  el.id = "panel-home";
+  el.setAttribute("role", "tabpanel");
+  el.setAttribute("aria-labelledby", "tab-home");
+  el.innerHTML = `
+    <section class="hero home-hero">
+      <span class="eyebrow">Interactive guide for product managers · 3 modules</span>
+      <h1>How software and AI agents get built, for product managers</h1>
+      <p class="lede">One wealth-management feature, built two ways. First as a <strong>portfolio summary</strong> screen, built with the software development life cycle. Then as a <strong>portfolio assistant</strong>, an AI agent built with the agent development life cycle. Each module stands on its own, explains every term in plain language, and ends with a quiz and a one-page cheat sheet.</p>
+      <div class="btnrow" data-home-cta></div>
+      <button class="search-hero" type="button" data-search-open>${SEARCH_ICON}<span>Search stages, sections and terms, e.g. rollback, golden dataset</span><kbd class="kbd">/</kbd></button>
+    </section>
+
+    <section class="twoways" aria-labelledby="twoh">
+      <div class="deep-head"><span class="eyebrow">The running example</span><h2 id="twoh">One feature, built two ways</h2></div>
+      <div class="grid g2">
+        <div class="box">
+          ${tag("Built as software · Module 1")}
+          <h4>Portfolio summary</h4>
+          <p>A screen in the relationship manager's app that pulls a client's holdings and shows fixed charts and numbers. The same input gives the same output, every time.</p>
+          ${metrics([["₹4,82,60,000", "Total value"], ["64.0%", "Equity"], ["9.8%", "1-year return"]])}
+        </div>
+        <div class="box">
+          ${tag("Built as an agent · Module 2", true)}
+          <h4>Portfolio assistant</h4>
+          <p>Answers a wealth manager's free-form questions about a client's portfolio, using tools to fetch data and explain it. Answers can vary, so quality is measured rather than assumed.</p>
+          <p class="mini-q">“Why is the Mehta portfolio down this quarter?”</p>
+          <div class="phases" aria-label="The agent loop"><span class="phase plan is-on">think</span><span class="phase act is-on">act</span><span class="phase observe is-on">observe</span><span class="phase finish is-on">final</span></div>
+        </div>
+      </div>
+      <p class="small muted">The Mehta family and every figure in this guide are illustrative.</p>
+    </section>
+
+    <section class="home-mods" aria-labelledby="modh">
+      <div class="deep-head"><span class="eyebrow">Modules</span><h2 id="modh">Read them in order, or start anywhere</h2></div>
+      <div class="modules three">${MODULES.map((m, i) => {
+        const c = MODULE_CARDS[m.id];
+        return `<article class="module" data-card="${m.id}">
+          <span class="num">${i + 1}</span>
+          <h2><a href="#${m.id}">${m.title}</a></h2>
+          <p class="sum">${c.sum}</p>
+          <div class="chips">${c.chips.map(([t, cls]) => `<span class="chip ${cls}">${t}</span>`).join("")}</div>
+          <ul>${c.points.map(x => `<li>${x}</li>`).join("")}</ul>
+          <div class="meta"><span data-minutes></span><span>${m.sections.length} sections</span>${c.meta.map(x => `<span>${x}</span>`).join("")}</div>
+          <div class="meter-row"><div class="meter" aria-hidden="true"><i data-meter></i></div><span class="mono small" data-read></span></div>
+          <span class="cta" aria-hidden="true" data-cta>Start module ${i + 1} →</span>
+          ${c.hint ? `<p class="hint-line">${c.hint}</p>` : ""}
+        </article>`;
+      }).join("")}</div>
+    </section>
+
+    <section class="how" aria-labelledby="howh">
+      <div class="deep-head"><span class="eyebrow">Before you start</span><h2 id="howh">How to use this guide</h2></div>
+      <div class="tips">
+        <div class="tip"><b>Tap dotted terms</b><p>The first time a technical word appears in a module, it has a dotted underline. Tap it for a plain-language definition.</p></div>
+        <div class="tip"><b>Break things on purpose</b><p>Each lifecycle map has a “What could go wrong” switch that replays a realistic failure and how the team caught it.</p></div>
+        <div class="tip"><b>Search anything</b><p>Press <kbd class="kbd">/</kbd> or use Search in the top bar to find any stage, section or term across all three modules.</p></div>
+        <div class="tip"><b>Keep the cheat sheets</b><p>Each module ends with a one-page summary, every term it uses, and the questions to ask your team.</p></div>
+      </div>
+    </section>`;
+  return el;
+}
+
+/* Called each time the home view is shown: progress, reading time and the resume button. */
+function refreshHome(read) {
+  const el = $("#panel-home");
+  MODULES.forEach((m, i) => {
+    const card = $(`[data-card="${m.id}"]`, el);
+    const done = m.sections.filter(s => read.has(s.id)).length;
+    const words = (m.el.textContent.match(/\S+/g) || []).length;
+    $("[data-minutes]", card).textContent = `about ${Math.max(5, Math.round(words / 200 / 5) * 5)} min`;
+    $("[data-meter]", card).style.width = (done / m.sections.length * 100).toFixed(0) + "%";
+    $("[data-read]", card).textContent = `${done} of ${m.sections.length} read`;
+    $("[data-cta]", card).textContent = done === m.sections.length ? `Review module ${i + 1} →` : done ? `Continue module ${i + 1} →` : `Start module ${i + 1} →`;
+  });
+  const last = store.get("sldc.last", null);
+  const lastMod = last && MODULES.find(m => m.sections.some(s => s.id === last));
+  const cta = $("[data-home-cta]", el);
+  if (lastMod) {
+    const s = lastMod.sections.find(x => x.id === last);
+    cta.innerHTML = `<a class="btn btn-primary" href="#${s.id}">Continue: ${lastMod.tab} · ${s.rail}</a><a class="btn" href="#${MODULES[0].id}">Start from module 1</a>`;
+  } else {
+    cta.innerHTML = `<a class="btn btn-primary" href="#${MODULES[0].id}">Start module 1 · SDLC</a><a class="btn" href="#compare">Jump to the comparison</a>`;
+  }
+}
+
 /* Rendering and interaction: tabs, section rail and progress, glossary popover,
    lifecycle maps, the simulated trace, quizzes, parallel tracks and scenarios. */
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -1707,6 +1865,7 @@ function renderModule(m) {
   m.el = el;
   m.secEls = $$(".sec", el);
 }
+panels.appendChild(renderHome());
 MODULES.forEach(renderModule);
 
 /* ---------- Tabs, rail, progress ---------- */
@@ -1716,32 +1875,52 @@ const railCount = $("#railCount");
 const bar = $("#progressBar");
 const read = new Set(store.get("sldc.read", []));
 const scrollPos = {};
-let cur = null;
+let cur = null;       // the open module, or null on the home page
+let curKey = null;    // "home" or a module id
+let lastSaved = store.get("sldc.last", null);
+const homeEl = $("#panel-home");
+const railRow = $(".railrow");
 
 function railHtml(m) {
   return m.sections.map((s, i) => `<a href="#${s.id}" data-i="${i}"><span class="n">${i + 1}</span>${s.rail}<span class="rd"${read.has(s.id) ? "" : " hidden"}>✓</span></a>`).join("");
 }
+/* id is "home" or a module id */
 function setModule(id, opts = {}) {
-  const m = MODULES.find(x => x.id === id) || MODULES[0];
-  if (cur && cur !== m) scrollPos[cur.id] = window.scrollY;
+  const m = MODULES.find(x => x.id === id) || null;
+  const key = m ? m.id : "home";
+  if (curKey && curKey !== key) scrollPos[curKey] = window.scrollY;
   closePop();
   MODULES.forEach(x => { x.el.hidden = x !== m; });
+  homeEl.hidden = !!m;
+  railRow.hidden = !m;
   tabs.forEach(t => {
-    const on = t.dataset.mod === m.id;
+    const on = t.dataset.mod === key;
     t.setAttribute("aria-selected", on);
     t.tabIndex = on ? 0 : -1;
   });
-  rail.innerHTML = railHtml(m);
+  rail.innerHTML = m ? railHtml(m) : "";
   cur = m;
+  curKey = key;
+  if (!m) refreshHome(read);
   if (opts.section) {
     const target = document.getElementById(opts.section);
     if (target) target.scrollIntoView();
   } else if (opts.restore !== false) {
-    window.scrollTo(0, scrollPos[m.id] || 0);
+    window.scrollTo(0, scrollPos[key] || 0);
   }
-  if (opts.hash !== false) history.replaceState(null, "", "#" + (opts.section || m.id));
+  if (opts.hash !== false) history.replaceState(null, "", "#" + (opts.section || key));
   onScroll();
 }
+/* Follow a #hash: home, a module, or a section inside one. */
+function route(hash) {
+  const h = decodeURIComponent(hash.replace(/^#/, ""));
+  const mod = MODULES.find(m => m.id === h);
+  const owner = MODULES.find(m => m.sections.some(s => s.id === h));
+  if (mod) setModule(mod.id, { hash: false });
+  else if (owner) setModule(owner.id, { section: h, hash: false });
+  else setModule("home", { hash: false, restore: h === "home" });
+}
+window.addEventListener("hashchange", () => route(location.hash));
 tabs.forEach(t => t.addEventListener("click", () => setModule(t.dataset.mod)));
 $(".modtabs").addEventListener("keydown", e => {
   const i = tabs.indexOf(document.activeElement);
@@ -1761,7 +1940,7 @@ rail.addEventListener("click", e => {
   if (!a) return;
   e.preventDefault();
   const id = a.getAttribute("href").slice(1);
-  document.getElementById(id).scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  document.getElementById(id).scrollIntoView();
   history.replaceState(null, "", "#" + id);
 });
 document.addEventListener("click", e => {
@@ -1775,7 +1954,7 @@ function onScroll() {
   ticking = true;
   requestAnimationFrame(() => {
     ticking = false;
-    if (!cur) return;
+    if (!cur) { bar.style.width = "0%"; return; }
     const topH = $("#topbar").offsetHeight + 24;
     const vh = window.innerHeight;
     let active = 0;
@@ -1783,7 +1962,7 @@ function onScroll() {
     cur.secEls.forEach((s, i) => {
       const r = s.getBoundingClientRect();
       if (r.top <= topH) active = i;
-      if (r.bottom < vh * 0.6 && !read.has(s.id)) { read.add(s.id); changed = true; }
+      if (r.bottom < vh * 0.6 && r.bottom > 0 && !read.has(s.id)) { read.add(s.id); changed = true; }
     });
     const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
     if (atEnd) {
@@ -1802,6 +1981,8 @@ function onScroll() {
       const left = act.offsetLeft - rail.offsetLeft;
       if (left < rail.scrollLeft || left + act.offsetWidth > rail.scrollLeft + rail.clientWidth) rail.scrollLeft = left - 24;
     }
+    const activeId = cur.sections[active].id;
+    if (activeId !== lastSaved) { lastSaved = activeId; store.set("sldc.last", activeId); }
     const nRead = cur.sections.filter(s => read.has(s.id)).length;
     railCount.innerHTML = `${active + 1} / ${cur.sections.length}<span class="long"> · ${nRead} read</span>`;
     const top = cur.el.offsetTop;
@@ -1917,7 +2098,7 @@ function setupMap(root, stages, kind) {
       return;
     }
     const j = e.target.closest("[data-jump]");
-    if (j) { e.preventDefault(); document.getElementById(j.dataset.jump).scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); history.replaceState(null, "", "#" + j.dataset.jump); }
+    if (j) { e.preventDefault(); document.getElementById(j.dataset.jump).scrollIntoView(); history.replaceState(null, "", "#" + j.dataset.jump); }
   });
   draw();
 }
@@ -2023,15 +2204,250 @@ $$("[data-scenarios] .scen").forEach(card => {
   });
 });
 
-/* ---------- Start ---------- */
-(function start() {
-  const h = decodeURIComponent(location.hash.slice(1));
-  const byMod = MODULES.find(m => m.id === h);
-  const bySec = MODULES.find(m => m.sections.some(s => s.id === h));
-  if (byMod) setModule(byMod.id, { hash: false });
-  else if (bySec) setModule(bySec.id, { section: h, hash: false });
-  else setModule(store.get("sldc.module", "sdlc"), { hash: false });
-  tabs.forEach(t => t.addEventListener("click", () => store.set("sldc.module", t.dataset.mod)));
+/* ---------- Start: the landing page unless the link names a module or section ---------- */
+route(location.hash);
+
+/* Site-wide search, after the one in how-ai-agents-work and pm-fundamentals.
+   A Search button in the top bar (or / and Ctrl/Cmd+K) opens a dialog over the page.
+   The index is built from the rendered modules the first time search opens: one entry per
+   section and sub-section, plus every glossary term. Picking a result opens the module,
+   scrolls to the section and highlights the matched words. */
+(function search() {
+  const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const MAX = 30;
+  const SUGGEST = ["acceptance criteria", "feature flag", "rollback", "golden dataset", "prompt injection", "p95", "red-teaming", "UAT"];
+  const KIND = { Stage: "k-call", Section: "k-res", Term: "k-think" };
+
+  /* ---------- Dialog ---------- */
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "gs-btn";
+  btn.id = "gsBtn";
+  btn.setAttribute("aria-label", "Search the guide");
+  btn.innerHTML = SEARCH_ICON + '<span class="gs-l">Search</span><kbd>/</kbd>';
+  $("#themeBtn").before(btn);
+
+  const ov = document.createElement("div");
+  ov.className = "gs-ov";
+  ov.hidden = true;
+  ov.innerHTML = `<div class="gs-box" role="dialog" aria-modal="true" aria-label="Search the guide">
+      <div class="gs-top">${SEARCH_ICON}<label class="sr" for="gsIn">Search the guide</label>
+        <input class="gs-in" id="gsIn" type="search" autocomplete="off" spellcheck="false" placeholder="Search stages, sections and terms" role="combobox" aria-expanded="true" aria-controls="gsList" aria-autocomplete="list">
+        <button type="button" class="gs-x" id="gsClose">Esc</button></div>
+      <div class="gs-meta" id="gsMeta" aria-live="polite"></div>
+      <ul class="gs-list" id="gsList" role="listbox" aria-label="Results"></ul>
+      <div class="gs-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Esc</kbd> close</span></div>
+    </div>`;
+  document.body.appendChild(ov);
+  const input = $("#gsIn"), list = $("#gsList"), meta = $("#gsMeta");
+
+  /* ---------- Index ---------- */
+  let INDEX = null;
+  /* Replace every tag with a space so text from neighbouring blocks doesn't run together. */
+  const decoder = document.createElement("textarea");
+  const textOf = node => { decoder.innerHTML = node.innerHTML.replace(/<[^>]+>/g, " "); return decoder.value.replace(/\s+/g, " ").replace(/ ([.,;:!?)])/g, "$1").trim(); };
+  function buildIndex() {
+    const entries = [];
+    MODULES.forEach((m, mi) => {
+      m.sections.forEach(s => {
+        const sec = document.getElementById(s.id).cloneNode(true);
+        $$("svg, .quiz-opts, .quiz-fb, .quiz-score, details.terms, .takeaway .k, [data-detail], [data-tnote], .verdict, .controls, .statusbar", sec).forEach(n => n.remove());
+        const h = textOf($("h2", sec));
+        const kind = /^Stage /.test(s.eyebrow) ? "Stage" : "Section";
+        const where = `Module ${mi + 1} · ${m.tab} › ${s.eyebrow.split(" · ")[0]}`;
+        let sub = "", buf = [];
+        const flush = () => { const t = buf.join(" ").trim(); if (t) entries.push({ kind, mod: m.id, sec: s.id, where, h, s: sub, t }); buf = []; };
+        Array.from(sec.children).forEach(ch => {
+          if (ch.matches("h3.sub")) { flush(); sub = textOf(ch); return; }
+          buf.push(textOf(ch));
+        });
+        flush();
+      });
+    });
+    Object.entries(TERMS).forEach(([key, [name, def]]) => entries.push({ kind: "Term", key, where: "Glossary", h: name, s: "", t: def }));
+    return entries;
+  }
+
+  /* ---------- Matching ---------- */
+  function run(q) {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return { words, results: [] };
+    const phrase = words.join(" ");
+    const out = [];
+    INDEX.forEach((e, order) => {
+      const h = e.h.toLowerCase(), s = e.s.toLowerCase(), t = e.t.toLowerCase();
+      let score = 0;
+      for (const w of words) {
+        const inH = h.includes(w), inS = s.includes(w), n = t.split(w).length - 1;
+        if (!inH && !inS && !n) return;
+        score += (inH ? 8 : 0) + (inS ? 5 : 0) + Math.min(n, 3);
+        if (e.kind === "Term" && inH) score += 6;
+        if (new RegExp("\\b" + reEsc(w) + "\\b").test(h + " " + s)) score += 3;
+      }
+      if (words.length > 1 && (h.includes(phrase) || s.includes(phrase) || t.includes(phrase))) score += 6;
+      if (e.kind === "Term" && h === phrase) score += 20;
+      out.push({ e, score, order });
+    });
+    out.sort((a, b) => b.score - a.score || a.order - b.order);
+    return { words, results: out.slice(0, MAX) };
+  }
+  const mark = (text, words) => words.reduce((html, w) => html.replace(new RegExp("\\b(" + reEsc(esc(w)) + ")", "gi"), "<mark>$1</mark>"), esc(text));
+  function snippet(text, words) {
+    const lower = text.toLowerCase();
+    let at = -1;
+    for (const w of words) { const i = lower.indexOf(w); if (i >= 0 && (at < 0 || i < at)) at = i; }
+    let start = Math.max(0, at - 70);
+    const end = Math.min(text.length, start + 190);
+    if (start > 0) { const sp = text.indexOf(" ", start); if (sp > 0 && sp < at) start = sp + 1; }
+    return (start > 0 ? "…" : "") + mark(text.slice(start, end), words) + (end < text.length ? "…" : "");
+  }
+
+  /* ---------- Rendering ---------- */
+  let results = [], words = [], active = -1, lastFocus = null;
+  function render() {
+    const q = input.value.trim();
+    if (!q) {
+      results = []; active = -1;
+      meta.textContent = `${INDEX.length} sections and terms across 3 modules`;
+      list.innerHTML = `<li class="gs-empty"><p>Try one of these:</p><div class="chips">${SUGGEST.map(x => `<button type="button" class="chip" data-q="${esc(x)}">${esc(x)}</button>`).join("")}</div></li>`;
+      input.removeAttribute("aria-activedescendant");
+      return;
+    }
+    ({ words, results } = run(q));
+    active = results.length ? 0 : -1;
+    if (!results.length) {
+      meta.textContent = "";
+      list.innerHTML = `<li class="gs-empty">No matches for “${esc(q)}”. Try a shorter or different word.</li>`;
+      input.removeAttribute("aria-activedescendant");
+      return;
+    }
+    meta.textContent = results.length === MAX ? `Top ${MAX} results` : `${results.length} result${results.length === 1 ? "" : "s"}`;
+    list.innerHTML = results.map(({ e }, i) => `<li role="option" id="gsOpt${i}" aria-selected="${i === active}"><a href="#${e.sec || ""}" tabindex="-1" data-i="${i}">
+        <span class="gs-row"><span class="kind ${KIND[e.kind]}">${e.kind}</span><span class="gs-where">${esc(e.where)}</span></span>
+        <span class="gs-h">${mark(e.h, words)}${e.s ? ` <span>› ${mark(e.s, words)}</span>` : ""}</span>
+        <span class="gs-snip">${snippet(e.t, words)}</span></a></li>`).join("");
+    input.setAttribute("aria-activedescendant", "gsOpt0");
+  }
+  function setActive(i) {
+    const opts = $$('[role="option"]', list);
+    if (!opts.length) return;
+    active = (i + opts.length) % opts.length;
+    opts.forEach((o, k) => o.setAttribute("aria-selected", String(k === active)));
+    opts[active].scrollIntoView({ block: "nearest" });
+    input.setAttribute("aria-activedescendant", "gsOpt" + active);
+  }
+
+  /* ---------- Going to a result ---------- */
+  function clearHits() {
+    $$("mark.gs-hit").forEach(m => { const p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); });
+  }
+  function markHits(root, ws) {
+    const re = new RegExp("\\b(" + ws.filter(w => w.length >= 2 || ws.length === 1).map(reEsc).join("|") + ")", "gi");
+    const nodes = [];
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => (n.parentElement.closest("svg, script, style, .quiz-fb, mark") || !n.nodeValue.trim() ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    });
+    while (walk.nextNode()) nodes.push(walk.currentNode);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      re.lastIndex = 0;
+      if (!re.test(text)) return;
+      re.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let pos = 0, m;
+      while ((m = re.exec(text))) {
+        if (m.index > pos) frag.appendChild(document.createTextNode(text.slice(pos, m.index)));
+        const mk = document.createElement("mark");
+        mk.className = "gs-hit";
+        mk.textContent = m[0];
+        frag.appendChild(mk);
+        pos = m.index + m[0].length;
+      }
+      if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function visible(el) { return el && el.offsetParent !== null; }
+  function go(i) {
+    const r = results[i];
+    if (!r) return;
+    const e = r.e;
+    close(false);
+    clearHits();
+    const smooth = { behavior: reduceMotion ? "auto" : "smooth", block: "center" };
+    if (e.kind === "Term") {
+      const order = [cur, ...MODULES.filter(m => m !== cur)].filter(Boolean);
+      let btn = null, mod = null;
+      for (const m of order) { btn = $(`.term[data-term="${e.key}"]`, m.el); if (btn) { mod = m; break; } }
+      if (!btn) return;
+      const sec = btn.closest(".sec");
+      setModule(mod.id, { section: sec.id });
+      if (!visible(btn)) { const d = btn.closest("details"); if (d) d.open = true; }
+      btn.scrollIntoView(smooth);
+      setTimeout(() => { btn.focus({ preventScroll: true }); openPop(btn); }, reduceMotion ? 0 : 350);
+      return;
+    }
+    setModule(e.mod, { section: e.sec });
+    const sec = document.getElementById(e.sec);
+    let scope = sec;
+    if (e.s) { const h3 = $$("h3.sub", sec).find(h => textOf(h) === e.s); if (h3) scope = h3; }
+    markHits(sec, words);
+    const hits = $$("mark.gs-hit", sec).filter(visible);
+    const inScope = scope === sec ? hits : hits.filter(m => scope.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const target = inScope[0] || hits[0] || scope;
+    target.scrollIntoView(smooth);
+    const flash = target.closest("p, li, td, .box, .ex, .wrong, h2, h3, h4, .quiz") || target;
+    flash.classList.add("gs-flash");
+    setTimeout(() => flash.classList.remove("gs-flash"), 1800);
+  }
+
+  /* ---------- Open and close ---------- */
+  function open(q) {
+    if (!INDEX) INDEX = buildIndex();
+    closePop();
+    lastFocus = document.activeElement;
+    ov.hidden = false;
+    document.documentElement.classList.add("gs-open");
+    if (typeof q === "string") input.value = q;
+    render();
+    input.focus();
+    input.select();
+  }
+  function close(restore = true) {
+    if (ov.hidden) return;
+    ov.hidden = true;
+    document.documentElement.classList.remove("gs-open");
+    if (restore && lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+  }
+  window.openSearch = open;
+
+  btn.addEventListener("click", () => open());
+  document.addEventListener("click", e => { if (e.target.closest("[data-search-open]")) open(); });
+  $("#gsClose").addEventListener("click", () => close());
+  ov.addEventListener("mousedown", e => { if (e.target === ov) close(); });
+  input.addEventListener("input", render);
+  list.addEventListener("click", e => {
+    const chip = e.target.closest(".chip[data-q]");
+    if (chip) { input.value = chip.dataset.q; render(); input.focus(); return; }
+    const a = e.target.closest("a[data-i]");
+    if (!a) return;
+    e.preventDefault();
+    go(+a.dataset.i);
+  });
+  list.addEventListener("mousemove", e => { const a = e.target.closest("a[data-i]"); if (a && +a.dataset.i !== active) setActive(+a.dataset.i); });
+  ov.addEventListener("keydown", e => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); setActive(active + 1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive(active - 1); }
+    else if (e.key === "Enter" && e.target === input && active >= 0) { e.preventDefault(); go(active); }
+    else if (e.key === "Tab") { e.preventDefault(); (document.activeElement === input ? $("#gsClose") : input).focus(); }
+  });
+  document.addEventListener("keydown", e => {
+    const typing = e.target.closest && e.target.closest("input, textarea, select, [contenteditable]");
+    if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) { e.preventDefault(); ov.hidden ? open() : close(); }
+    else if (e.key === "/" && !typing && ov.hidden && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); open(); }
+  });
 })();
 
 </script>
