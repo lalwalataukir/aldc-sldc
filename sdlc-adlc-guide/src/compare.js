@@ -17,6 +17,21 @@ const TRACK_LINKS = {
   "adlc-monitor": { to: ["sdlc-maintenance"], h: "Monitoring, compared with maintenance", note: "Maintenance fixes what breaks. Agent monitoring also catches quality that slowly gets worse, cost creep and new attack patterns, and it loops back to design rather than only to planning." },
 };
 
+/* Four differences you can see at a glance, each drawn twice: software on the left, the agent on the right. */
+const PATHS = { software: ["q0", "y0", "o0"], agent: ["q0", "n0", "q1", "n1", "end"], mix: ["q0", "n0", "q1", "y1", "o1"] };
+function glance() {
+  const box2 = (h, a, sa, b, sb) => `<div><h4>${h}</h4><div class="glance-pair"><div><span>Software</span>${a}<p>${sa}</p></div><div><span>Agent</span>${b}<p>${sb}</p></div></div></div>`;
+  const svg = inner => `<svg viewBox="0 0 120 60" aria-hidden="true">${inner}</svg>`;
+  const squares = (n, bad = []) => Array.from({ length: n }, (_, i) => `<rect x="${8 + (i % 8) * 13}" y="${12 + Math.floor(i / 8) * 13}" width="10" height="10" rx="2" class="fk-${bad.includes(i) ? "bad" : "final"}"></rect>`).join("");
+  const bars = [6, 10, 18, 30, 40, 26].map((h, i) => `<rect x="${10 + i * 17}" y="${52 - h}" width="13" height="${h}" rx="2" class="fk-${i < 1 ? "bad" : "accent"}"></rect>`).join("");
+  return `<div class="glance" role="list">${[
+    box2("How testing works", svg(squares(16)), "every case passes or fails", svg(bars), "a spread of scores"),
+    box2("Behaviour over time", svg('<polyline class="vs-series sk-observe" points="8,30 112,30"></polyline>'), "flat until someone deploys", svg('<line class="vs-mark sk-bad" x1="64" x2="64" y1="6" y2="54"></line><polyline class="vs-series sk-accent" points="8,22 40,20 64,21 80,34 112,38"></polyline>'), "drops after a model update"),
+    box2("Cost as usage grows", svg('<polyline class="vs-series sk-observe" points="8,50 112,47"></polyline>'), "close to zero per use", svg('<polyline class="vs-series sk-accent" points="8,52 112,10"></polyline>'), "every question costs money"),
+    box2("How it's released", svg('<polyline class="vs-series sk-observe" points="8,52 30,52 30,44 50,44 50,10 112,10"></polyline>'), "flag, then everyone, in days", svg('<polyline class="vs-series sk-accent" points="8,52 26,52 26,48 52,48 52,38 80,38 80,10 112,10"></polyline><circle class="fk-accent" cx="52" cy="48" r="3"></circle><circle class="fk-accent" cx="80" cy="38" r="3"></circle>'), "gated stages over weeks"),
+  ].map(x => x.replace("<div><h4>", '<div role="listitem"><h4>')).join("")}</div>`;
+}
+
 const SCENARIOS = [
   { s: "Every month, each client receives a PDF statement with holdings, transactions and returns, in a format the regulator expects.", a: "software",
     why: "<strong>Regular software.</strong> The output is identical in shape every time, every figure must be exact, and the format is regulated. Nothing here is open-ended, so an agent would only add cost and risk." },
@@ -50,7 +65,7 @@ MODULES.push({
       id: "cmp-table", rail: "Table", eyebrow: "Section 2 · Comparison",
       title: "Nine differences, side by side",
       intro: "The same nine questions, answered for each version of the running example.",
-      body: () => table(["Dimension", "Portfolio summary (SDLC)", "Portfolio assistant (ADLC)"], [
+      body: () => glance() + table(["Dimension", "Portfolio summary (SDLC)", "Portfolio assistant (ADLC)"], [
         ["How requirements are written", "A [[PRD]] and [[user story|user stories]] with exact [[acceptance criteria]].<span class=\"eg\">“Total value matches the custodian statement to the rupee.”</span>", "An agent spec, a [[system prompt]], and example questions with good answers. Success is a threshold across a [[golden dataset|dataset]].<span class=\"eg\">“98% of figures match tool data on 150 questions.”</span>"],
         ["What “done” means", "Every acceptance criterion passes and [[UAT]] is signed off.", "[[eval|Eval]] scores meet the agreed thresholds, [[red-teaming|red-team]] findings are closed, and the rollout gates are passed. It is never fully finished."],
         ["How testing works", "Pass/fail. The software is [[deterministic]]: the same input always gives the same output, so one failure is a real bug.", "Scored quality. Answers are graded by rules, an [[LLM-as-judge|LLM judge]] and humans across many cases, and you look at rates."],
@@ -68,14 +83,16 @@ MODULES.push({
       title: "What stays the same",
       intro: "Most of good product practice carries straight over. Agents add to it; they don't replace it.",
       body: () => [
-        grid(3, [
-          box("Start from the user's problem", p("Both versions began with the same fact: RMs spend 20 minutes preparing for each meeting. The technology is a means, not the goal.")),
-          box("One owner, one goal, one metric", p("Someone owns the outcome, and everyone knows what success looks like before work starts.")),
-          box("Write it down", p("Decisions, definitions and scope live in documents people can review, whether that's a PRD or an agent spec.")),
-          box("Small, reversible steps", p("Ship to a small group first, measure, and keep a way to switch back.")),
-          box("Check before release", p("Nothing reaches users without evidence that it works, whether that's a test report or an eval report.")),
-          box("Listen after launch", p("Feedback, metrics and retros shape the next version, and compliance reviews everything client-facing.")),
-        ]),
+        fig(`<svg class="venn-svg" viewBox="0 0 520 210" aria-hidden="true">
+            <circle class="venn-a" cx="200" cy="105" r="98"></circle><circle class="venn-b" cx="320" cy="105" r="98"></circle>
+            <text class="vs-h" x="140" y="100" text-anchor="middle">SDLC</text><text class="vs-ax" x="140" y="120" text-anchor="middle">3 practices</text>
+            <text class="vs-h" x="260" y="100" text-anchor="middle">Both</text><text class="vs-ax" x="260" y="120" text-anchor="middle">6 practices</text>
+            <text class="vs-h" x="380" y="100" text-anchor="middle">ADLC</text><text class="vs-ax" x="380" y="120" text-anchor="middle">5 practices</text></svg>
+          <div class="venn-cols">
+            <div><h5 style="color:var(--observe)">Software only</h5><ul><li>Exact acceptance criteria</li><li>Pass/fail test suites</li><li>Release in days behind a flag</li></ul></div>
+            <div><h5>Both · unchanged</h5><ul><li>Start from the user's problem: RMs lose 20 minutes per meeting</li><li>One owner, one goal, one metric</li><li>Write decisions and definitions down</li><li>Small, reversible releases</li><li>Evidence before release</li><li>Feedback, retros and compliance review after launch</li></ul></div>
+            <div><h5 style="color:var(--accent)">Agent only</h5><ul><li>Golden datasets and scored evals</li><li>Red-teaming</li><li>Human approval of outputs</li><li>A budget for cost per use</li><li>Watching for quality drift</li></ul></div></div>`,
+          "Most good product practice sits in the overlap. The agent side adds to it; it doesn't replace it.", { title: "What the two lifecycles share" }),
       ].join(""),
       remember: "If you're a good software PM, you already have most of the habits an agent PM needs.",
     },
@@ -84,12 +101,12 @@ MODULES.push({
       title: "What changes for the PM",
       intro: "Four parts of the job work differently. Each shows how it was done before and how it's done now.",
       body: () => [
-        grid(2, [
-          box("Writing requirements", `<div class="ba"><span class="was">Before: exact rules for a fixed screen.</span><span class="now"><b>Now:</b> a job description, a tool and permission list, a never-do list, prompt wording, and example answers.</span></div>`),
-          box("Defining success metrics", `<div class="ba"><span class="was">Before: adoption and time saved.</span><span class="now"><b>Now:</b> those, plus quality rates, cost per question, [[latency]] at [[p95]] and safety findings.</span></div>`),
-          box("Running QA", `<div class="ba"><span class="was">Before: test cases that pass or fail.</span><span class="now"><b>Now:</b> owning a golden dataset, reading scored failures, and deciding what is good enough.</span></div>`),
-          box("Planning launches", `<div class="ba"><span class="was">Before: a flag and a date.</span><span class="now"><b>Now:</b> shadow mode, a pilot, written quality gates, human approval and weeks of review.</span></div>`),
-        ]),
+        `<div class="grid g2">${[
+          ["Writing requirements", "PRD and stories", '<span class="glyph" style="--c:var(--observe)"><i style="width:34px;height:42px"></i></span>', "Spec, prompt and 150 examples", '<span class="glyph" style="--c:var(--accent)"><i style="width:22px;height:28px"></i><i style="width:22px;height:34px"></i><i style="width:22px;height:42px"></i></span>', "A job description, a tool and permission list, a never-do list, prompt wording, and example answers."],
+          ["Defining success metrics", "2 numbers", '<span class="glyph" style="--c:var(--observe)"><i style="width:14px;height:20px"></i><i style="width:14px;height:32px"></i></span>', "5 numbers", '<span class="glyph" style="--c:var(--accent)"><i style="width:10px;height:20px"></i><i style="width:10px;height:32px"></i><i style="width:10px;height:26px"></i><i style="width:10px;height:38px"></i><i style="width:10px;height:14px"></i></span>', "Adoption and time saved, plus quality rate, cost per question, [[latency]] at [[p95]] and safety findings."],
+          ["Running QA", "Cases pass or fail", '<span class="glyph" style="--c:var(--final)">' + '<i style="width:9px;height:9px"></i>'.repeat(6) + '</span>', "A scored dataset", '<span class="glyph" style="--c:var(--accent);max-width:90px">' + Array.from({ length: 24 }, (_, i) => `<i style="width:9px;height:9px${[7, 18].includes(i) ? ";background:var(--bad)" : ""}"></i>`).join("") + '</span>', "Owning a golden dataset, reading the scored failures, and deciding what is good enough."],
+          ["Planning launches", "A flag and a date", '<span class="glyph" style="--c:var(--observe)"><i style="width:22px;height:10px"></i><i style="width:22px;height:40px"></i></span>', "Gated stages over weeks", '<span class="glyph" style="--c:var(--accent)"><i style="width:14px;height:6px"></i><i style="width:14px;height:14px"></i><i style="width:14px;height:24px"></i><i style="width:14px;height:42px"></i></span>', "Shadow mode, a pilot, written quality gates, human approval and weeks of review."],
+        ].map(([h, a, ga, b, gb, txt]) => box(h, `<div class="ft"><div><em>Before</em>${ga}<span class="small">${a}</span></div><span aria-hidden="true">→</span><div><em>Now</em>${gb}<span class="small">${b}</span></div></div>` + p(txt))).join("")}</div>`,
         sub("Acceptance criteria and success metrics, side by side"),
         `<div class="crit">
           ${box("Portfolio summary · acceptance criterion", `<p><q>Given a client with at least one holding, when the RM opens the summary, the total value equals the custodian's end-of-day value to the rupee, and the screen loads within 2 seconds for 95% of opens.</q></p>`, { tag: "SDLC" })}
@@ -104,13 +121,14 @@ MODULES.push({
     {
       id: "cmp-decide", rail: "Decide", eyebrow: "Section 5 · Decision guide",
       title: "Regular software, an agent, or both?",
-      intro: "Use the simplest thing that works. Read the three rules, then try the scenarios.",
+      intro: "Use the simplest thing that works. Answer three questions, then try the scenarios.",
       body: () => [
-        grid(3, [
-          box("Choose regular software when", ul(["The same input should always give the same output", "Every figure must be exact and auditable", "The questions or screens are known in advance", "The format is fixed or regulated"]), { tag: "Software" }),
-          box("Choose an agent when", ul(["Questions are open-ended and varied", "Answering needs several lookups combined", "The value is in an explanation in words", "A human checks the result before it matters"]), { tag: "Agent", accent: true }),
-          box("Choose a mix when", ul(["Part of the job must be exact and part is explanation", "Rules do the calculating; the agent does the explaining", "A human approves before anything reaches a client"]), { tag: "Both" }),
-        ]),
+        fig(ladder([
+          { q: "Should the output be the same every time, with exact figures?", yes: { t: "Regular software", k: "observe" } },
+          { q: "Does part of the job still need exact, auditable figures?", yes: { t: "A mix: rules calculate, an agent explains, a person approves", k: "act" } },
+          { end: { t: "An agent, read-only, with guardrails", k: "accent" } },
+        ], "decide") + `<div class="v-tg-btns" role="group" aria-label="Show the path for a scenario"><span class="small muted">Show the path for:</span>${SCENARIOS.map((x, i) => `<button type="button" class="chip" data-path="${x.a}" aria-pressed="false">Scenario ${i + 1}</button>`).join("")}</div>`,
+          "Three questions, in order. Pick a scenario below, or tap a button, to light up its path.", { interactive: true, title: "Software, agent or both?" }),
         sub("Three wealth-management scenarios"),
         `<div class="grid g3" data-scenarios>${SCENARIOS.map((x, i) => `<div class="scen" data-a="${x.a}"><span class="eyebrow">Scenario ${i + 1}</span><p class="s">${x.s}</p><div class="opts" role="group" aria-label="Your answer for scenario ${i + 1}">${[["software", "Software"], ["agent", "Agent"], ["mix", "Mix"]].map(([v, l]) => `<button class="chip" type="button" data-v="${v}" aria-pressed="false">${l}</button>`).join("")}</div><div class="verdict" aria-live="polite" data-why="${x.why.replace(/"/g, "&quot;")}"></div></div>`).join("")}</div>`,
       ].join(""),
@@ -121,9 +139,9 @@ MODULES.push({
       title: "Three mistakes teams make when they treat an agent like regular software",
       intro: "Each one comes from an SDLC habit that worked well and stops working here.",
       body: () => mistakes([
-        { title: "Testing a handful of cases once", looks: "“QA tried 20 questions and they all looked fine, so let's ship.”", why: "A probabilistic system can pass 20 tries and fail on the 21st. Easy hand-picked questions hide real weaknesses.", fix: "Build a golden dataset from real questions, set thresholds before scoring, and re-run it on every prompt, tool or model change." },
-        { title: "Treating launch as the finish line", looks: "Dashboards track uptime and errors only, and nobody owns answer quality after launch.", why: "Answers can get worse after a model update or new data with no code change, and no error will fire.", fix: "Name an owner for weekly trace and feedback review, run a daily automated eval, and send findings back to design." },
-        { title: "Relying on the prompt for safety", looks: "“The prompt says never give advice and never show other clients' data, so we're covered.”", why: "Prompts can be ignored, misread or overridden by injected text. Instructions are not controls.", fix: "Enforce permissions inside the tools, add [[guardrail]] checks outside the model, and require human approval for anything client-facing." },
+        { title: "Testing a handful of cases once", habit: ["Test a few cases, then ship", "answers vary from run to run"], looks: "“QA tried 20 questions and they all looked fine, so let's ship.”", why: "A probabilistic system can pass 20 tries and fail on the 21st. Easy hand-picked questions hide real weaknesses.", fix: "Build a golden dataset from real questions, set thresholds before scoring, and re-run it on every prompt, tool or model change." },
+        { title: "Treating launch as the finish line", habit: ["Launch, then move on", "quality can drift with no code change"], looks: "Dashboards track uptime and errors only, and nobody owns answer quality after launch.", why: "Answers can get worse after a model update or new data with no code change, and no error will fire.", fix: "Name an owner for weekly trace and feedback review, run a daily automated eval, and send findings back to design." },
+        { title: "Relying on the prompt for safety", habit: ["Write the rule in the spec", "a prompt is not a control"], looks: "“The prompt says never give advice and never show other clients' data, so we're covered.”", why: "Prompts can be ignored, misread or overridden by injected text. Instructions are not controls.", fix: "Enforce permissions inside the tools, add [[guardrail]] checks outside the model, and require human approval for anything client-facing." },
       ]),
       remember: "Instructions are not controls. Put the things that must never happen in code and in process.",
     },
@@ -132,7 +150,7 @@ MODULES.push({
       title: "Combined cheat sheet",
       intro: "Both lifecycles and the differences that matter, on one page.",
       body: () => cheatSheet({
-        eyebrow: "Module 3 · SDLC versus ADLC", title: "Two lifecycles on one page",
+        eyebrow: "Module 3 · SDLC versus ADLC", title: "Two lifecycles on one page", visual: () => miniLifecycles("both"),
         formula: "Software: <em>specify exactly</em>, test pass/fail, ship. Agent: <em>specify behaviour</em>, score quality, gate, watch, repeat.",
         blocks: [
           { h: "Stage pairs", items: ["Planning ↔ Problem framing", "Requirements ↔ Agent design + Prompts", "Design ↔ Agent design", "Build ↔ Agent loop", "Testing ↔ Evaluation + Red-teaming", "Deployment ↔ Staged rollout", "Maintenance ↔ Monitoring, looping back to design"] },

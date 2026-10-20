@@ -122,6 +122,7 @@ function setModule(id, opts = {}) {
   cur = m;
   curKey = key;
   if (!m) refreshHome(read);
+  document.dispatchEvent(new CustomEvent("guide:shown", { detail: key }));
   if (opts.section) {
     const target = document.getElementById(opts.section);
     if (target) target.scrollIntoView();
@@ -237,26 +238,25 @@ new MutationObserver(syncThemeBtn).observe(document.documentElement, { attribute
 window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", syncThemeBtn);
 
 /* ---------- Lifecycle maps ---------- */
-const NS = "http://www.w3.org/2000/svg";
-const f1 = n => n.toFixed(1);
 
-function wheelSvg(stages) {
+function wheelSvg(stages, mini) {
   const cx = 260, cy = 260, R = 246, r = 118, n = stages.length, step = (Math.PI * 2) / n;
   const pt = (rad, a) => [cx + rad * Math.cos(a), cy + rad * Math.sin(a)];
   const segs = stages.map((s, i) => {
     const a0 = -Math.PI / 2 + i * step, a1 = a0 + step, am = (a0 + a1) / 2;
     const [x0, y0] = pt(R, a0), [x1, y1] = pt(R, a1), [x2, y2] = pt(r, a1), [x3, y3] = pt(r, a0), [lx, ly] = pt((R + r) / 2, am);
     const d = `M${f1(x0)} ${f1(y0)} A${R} ${R} 0 0 1 ${f1(x1)} ${f1(y1)} L${f1(x2)} ${f1(y2)} A${r} ${r} 0 0 0 ${f1(x3)} ${f1(y3)} Z`;
-    return `<g class="seg" data-i="${i}" tabindex="0" role="button" aria-label="Stage ${i + 1}: ${s.name}"><path d="${d}"></path><text class="num" x="${f1(lx)}" y="${f1(ly - 10)}" text-anchor="middle">${i + 1}</text><text x="${f1(lx)}" y="${f1(ly + 10)}" text-anchor="middle">${s.name}</text></g>`;
+    return `<g class="seg" data-i="${i}"${mini ? "" : ` tabindex="0" role="button" aria-label="Stage ${i + 1}: ${s.name}"`}><path d="${d}"></path><text class="num" x="${f1(lx)}" y="${f1(ly - 10)}" text-anchor="middle">${i + 1}</text><text x="${f1(lx)}" y="${f1(ly + 10)}" text-anchor="middle">${s.name}</text></g>`;
   }).join("");
-  return `<svg viewBox="0 0 520 520" role="group" aria-label="SDLC wheel with ${n} stages">${segs}
+  return `<svg viewBox="0 0 520 520"${mini ? ' class="is-mini" aria-hidden="true"' : ` role="group" aria-label="SDLC wheel with ${n} stages"`}>${segs}
     <circle class="hub" cx="${cx}" cy="${cy}" r="${r - 10}"></circle>
     <text class="hub-t" x="${cx}" y="${cy - 6}" text-anchor="middle">SDLC</text>
     <text class="hub-s" x="${cx}" y="${cy + 18}" text-anchor="middle">7 stages, clockwise</text>
     <text class="hub-s" x="${cx}" y="${cy + 36}" text-anchor="middle">maintenance feeds planning</text></svg>`;
 }
 
-function loopSvg(stages) {
+function loopSvg(stages, mini) {
+  const id = mini ? "M" : "";
   const cx = 360, cy = 272, rx = 270, ry = 206, hw = 84, hh = 26;
   const subs = ["is an agent needed?", "job, tools, guardrails", "instructions and data", "plan, act, observe", "score many cases", "attack it first", "gates, human approval", "traces, cost, feedback"];
   const pos = stages.map((s, i) => { const a = -Math.PI / 2 + i * (Math.PI / 4); return [cx + rx * Math.cos(a), cy + ry * Math.sin(a)]; });
@@ -269,16 +269,16 @@ function loopSvg(stages) {
   for (let i = 0; i < stages.length - 1; i++) {
     const [a, b] = [pos[i], pos[i + 1]], dx = b[0] - a[0], dy = b[1] - a[1];
     const [x1, y1] = edgePt(a, dx, dy, 3), [x2, y2] = edgePt(b, -dx, -dy, 6);
-    edges += `<line class="edge" x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" marker-end="url(#ahLoop)"></line>`;
+    edges += `<line class="edge" x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" marker-end="url(#ahLoop${id})"></line>`;
   }
   const m = pos[7], d = pos[1];
-  edges += `<path class="edge-back" d="M${f1(m[0] + hw + 3)} ${f1(m[1] + 6)} Q ${cx} ${f1(m[1] + 92)} ${f1(d[0] - hw - 7)} ${f1(d[1] + 6)}" marker-end="url(#ahBack)"></path>
+  edges += `<path class="edge-back" d="M${f1(m[0] + hw + 3)} ${f1(m[1] + 6)} Q ${cx} ${f1(m[1] + 92)} ${f1(d[0] - hw - 7)} ${f1(d[1] + 6)}" marker-end="url(#ahBack${id})"></path>
     <text class="lbl-accent" x="${cx}" y="${f1(m[1] + 74)}" text-anchor="middle">findings go back to design</text>`;
   const nodes = stages.map((s, i) => { const [x, y] = pos[i];
-    return `<g class="node" data-i="${i}" tabindex="0" role="button" aria-label="Stage ${i + 1}: ${s.name}"><rect x="${f1(x - hw)}" y="${f1(y - hh)}" width="${hw * 2}" height="${hh * 2}" rx="10"></rect><text class="ttl" x="${f1(x)}" y="${f1(y - 3)}" text-anchor="middle"><tspan class="nn">${i + 1} · </tspan>${s.short}</text><text class="sub" x="${f1(x)}" y="${f1(y + 15)}" text-anchor="middle">${subs[i]}</text></g>`; }).join("");
-  return `<svg viewBox="0 0 720 544" role="group" aria-label="ADLC loop with ${stages.length} stages">
-    <defs><marker id="ahLoop" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0 0 L10 5 L0 10 z"></path></marker>
-    <marker id="ahBack" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow-accent" d="M0 0 L10 5 L0 10 z"></path></marker></defs>
+    return `<g class="node" data-i="${i}"${mini ? "" : ` tabindex="0" role="button" aria-label="Stage ${i + 1}: ${s.name}"`}><rect x="${f1(x - hw)}" y="${f1(y - hh)}" width="${hw * 2}" height="${hh * 2}" rx="10"></rect><text class="ttl" x="${f1(x)}" y="${f1(y - 3)}" text-anchor="middle"><tspan class="nn">${i + 1} · </tspan>${s.short}</text><text class="sub" x="${f1(x)}" y="${f1(y + 15)}" text-anchor="middle">${subs[i]}</text></g>`; }).join("");
+  return `<svg viewBox="0 0 720 544"${mini ? ' class="is-mini" aria-hidden="true"' : ` role="group" aria-label="ADLC loop with ${stages.length} stages"`}>
+    <defs><marker id="ahLoop${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0 0 L10 5 L0 10 z"></path></marker>
+    <marker id="ahBack${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow-accent" d="M0 0 L10 5 L0 10 z"></path></marker></defs>
     ${edges}
     <text class="hub-t" x="${cx}" y="${cy + 28}" text-anchor="middle">ADLC</text>
     <text class="hub-s" x="${cx}" y="${cy + 52}" text-anchor="middle">8 stages, clockwise, never finished</text>
@@ -296,7 +296,7 @@ function setupMap(root, stages, kind) {
     detail.classList.toggle("is-bad", state.bad);
     const owner = `Owner: ${s.owner.join(" and ")}`;
     const body = state.bad
-      ? `<div class="wrong-h"><span class="kind k-bad">Goes wrong</span><b>${s.wrong.title}</b></div><p>${s.wrong.what}</p>${log(s.wrong.timeline)}<p><strong>How it's caught.</strong> ${s.wrong.caught}</p>`
+      ? `<div class="wrong-h"><span class="kind k-bad">Goes wrong</span><b>${s.wrong.title}</b></div><p>${s.wrong.what}</p>${timeline(s.wrong.timeline)}<p><strong>How it's caught.</strong> ${s.wrong.caught}</p>`
       : `<p>${s.what[0]}</p>${dl([["What the PM does", s.pm.slice(0, 3).join(". ") + "."], ["What it produces", s.output.join(" · ")]])}`;
     detail.innerHTML = markTerms(`<div class="detail-top"><span class="eyebrow">Stage ${state.i + 1} of ${stages.length} · ${owner}</span>
       <button class="switch" type="button" aria-pressed="${state.bad}" data-act="bad"><span class="knob"></span>What could go wrong</button></div>
@@ -343,6 +343,8 @@ setupMap($("[data-map=adlc]"), ADLC_STAGES, "adlc");
     q("cost").textContent = "$" + sum.cost.toFixed(3);
     q("tok").textContent = sum.tok.toLocaleString("en-US");
     q("spans").textContent = lines.filter(l => ["e-model", "e-tool", "e-bad"].includes(l[1])).length;
+    const sp = TRACE.spans.filter(x => x.step <= n);
+    q("wf").innerHTML = sp.length ? waterfall(sp, 4.52, [0, 1, 2, 3, 4]) : `<p class="demo-empty small">Spans appear here as the run progresses.</p>`;
     q("n").textContent = n;
     const last = shown[n - 1];
     q("phase").textContent = !last ? "Ready" : n === steps.length ? "Run complete · waiting for the RM to review the draft" : `${last.label} · ${last.title}`;
@@ -372,6 +374,7 @@ $$(".quizset").forEach(set => {
     const done = $$(".quiz[data-done]", set);
     $("[data-n]", set).textContent = done.length;
     $("[data-r]", set).textContent = done.filter(x => x.dataset.done === "right").length;
+    $(".v-ring .fg", set).style.strokeDashoffset = 100 - (done.length / $$(".quiz", set).length) * 100;
   };
   set.addEventListener("click", e => {
     const opt = e.target.closest(".opt");
@@ -405,9 +408,29 @@ $$(".quizset").forEach(set => {
       b.classList.toggle("is-match", match);
       b.setAttribute("aria-pressed", sel);
     });
+    drawLinks(id);
     note.innerHTML = markTerms(`<span class="pair">${side(id)} · ${nameOf(id)} ↔ ${side(link.to[0])} · ${link.to.map(nameOf).join(" + ")}</span><h3>${link.h}</h3><p>${link.note}</p>`, null);
   }
   root.addEventListener("click", e => { const b = e.target.closest(".tstage"); if (b) pick(b.dataset.id); });
+  /* Connector lines between matched stages, drawn in the gap between the two tracks. */
+  let selected = SDLC_STAGES[0].id;
+  function drawLinks(id) {
+    if (id) selected = id;
+    let svg = $(".v-links", root);
+    if (!svg) { svg = document.createElementNS(NS, "svg"); svg.setAttribute("class", "v-links"); svg.setAttribute("aria-hidden", "true"); root.prepend(svg); }
+    const box = root.getBoundingClientRect();
+    if (!box.width) return;
+    const at = (bid, side) => { const r = $(`.tstage[data-id="${bid}"]`, root).getBoundingClientRect(); return [side === "r" ? r.right - box.left : r.left - box.left, r.top - box.top + r.height / 2]; };
+    let paths = "";
+    SDLC_STAGES.forEach(s => TRACK_LINKS[s.id].to.forEach(to => {
+      const [x1, y1] = at(s.id, "r"), [x2, y2] = at(to, "l"), mx = (x1 + x2) / 2;
+      const on = selected === s.id || selected === to;
+      paths += `<path class="${on ? "on" : ""}" d="M${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}"></path>`;
+    }));
+    svg.innerHTML = paths;
+  }
+  window.addEventListener("resize", () => drawLinks());
+  document.addEventListener("guide:shown", e => { if (e.detail === "compare") drawLinks(); });
   pick(SDLC_STAGES[0].id);
 })();
 
@@ -421,7 +444,40 @@ $$("[data-scenarios] .scen").forEach(card => {
     b.classList.add(right ? "ok" : "no");
     const v = $(".verdict", card);
     v.innerHTML = `<p>${right ? "<b>Right.</b>" : "<b>Not quite.</b>"} ${v.dataset.why}</p>`;
+    lightPath(card.dataset.a);
   });
+});
+
+/* ---------- Visual interactions: view toggles, tool swimlanes, risk matrix, decision path ---------- */
+function lightPath(key) {
+  const lad = $('[data-ladder="decide"]');
+  $$("[data-node]", lad).forEach(n => n.classList.toggle("is-on", PATHS[key].includes(n.dataset.node)));
+  $$("[data-path]", lad.closest(".fig")).forEach(b => b.setAttribute("aria-pressed", b.dataset.path === key));
+}
+document.addEventListener("click", e => {
+  const pb = e.target.closest("[data-path]");
+  if (pb) { lightPath(pb.dataset.path); return; }
+  const tb = e.target.closest(".v-tg-btns button");
+  if (tb) {
+    const tg = tb.closest(".v-tg");
+    $$(".v-tg-btns button", tg).forEach(b => b.setAttribute("aria-pressed", b === tb));
+    $$(".v-tg-view", tg).forEach(v => { v.hidden = v.dataset.view !== tb.dataset.v; });
+    return;
+  }
+  const sb = e.target.closest(".v-sw-bar");
+  if (sb) {
+    const sw = sb.closest(".v-sw"), note = $(".v-note", sw);
+    const [t, n] = JSON.parse(note.dataset.notes)[sb.dataset.i];
+    $$(".v-sw-bar", sw).forEach(b => b.setAttribute("aria-pressed", b === sb));
+    note.innerHTML = `<b>${t}.</b> ${n}`;
+    return;
+  }
+  const ri = e.target.closest(".v-rm-item");
+  if (ri) {
+    const rm = ri.closest(".v-rm"), x = JSON.parse(rm.dataset.items)[ri.dataset.j];
+    $$(".v-rm-item", rm).forEach(b => b.setAttribute("aria-pressed", b === ri));
+    $(".v-rm-note", rm).innerHTML = `<h4>${x.t}</h4><p>${x.looks}</p>${dl([["Caught before launch by", x.before], ["Caught after launch by", x.after]])}`;
+  }
 });
 
 /* ---------- Start: the landing page unless the link names a module or section ---------- */

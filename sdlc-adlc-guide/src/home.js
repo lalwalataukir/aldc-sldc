@@ -31,13 +31,13 @@ function renderHome() {
   el.setAttribute("role", "tabpanel");
   el.setAttribute("aria-labelledby", "tab-home");
   el.innerHTML = `
-    <section class="hero home-hero">
+    <section class="hero home-hero"><div class="hero-text">
       <span class="eyebrow">Interactive guide for product managers · 3 modules</span>
       <h1>How software and AI agents get built, for product managers</h1>
       <p class="lede">One wealth-management feature, built two ways. First as a <strong>portfolio summary</strong> screen, built with the software development life cycle. Then as a <strong>portfolio assistant</strong>, an AI agent built with the agent development life cycle. Each module stands on its own, explains every term in plain language, and ends with a quiz and a one-page cheat sheet.</p>
       <div class="btnrow" data-home-cta></div>
       <button class="search-hero" type="button" data-search-open>${SEARCH_ICON}<span>Search stages, sections and terms, e.g. rollback, golden dataset</span><kbd class="kbd">/</kbd></button>
-    </section>
+    </div><div class="hero-art">${miniLifecycles("both")}</div></section>
 
     <section class="twoways" aria-labelledby="twoh">
       <div class="deep-head"><span class="eyebrow">The running example</span><h2 id="twoh">One feature, built two ways</h2></div>
@@ -46,14 +46,15 @@ function renderHome() {
           ${tag("Built as software · Module 1")}
           <h4>Portfolio summary</h4>
           <p>A screen in the relationship manager's app that pulls a client's holdings and shows fixed charts and numbers. The same input gives the same output, every time.</p>
-          ${metrics([["₹4,82,60,000", "Total value"], ["64.0%", "Equity"], ["9.8%", "1-year return"]])}
+          ${wireframe("desktop")}
         </div>
         <div class="box">
           ${tag("Built as an agent · Module 2", true)}
           <h4>Portfolio assistant</h4>
           <p>Answers a wealth manager's free-form questions about a client's portfolio, using tools to fetch data and explain it. Answers can vary, so quality is measured rather than assumed.</p>
-          <p class="mini-q">“Why is the Mehta portfolio down this quarter?”</p>
-          <div class="phases" aria-label="The agent loop"><span class="phase plan is-on">think</span><span class="phase act is-on">act</span><span class="phase observe is-on">observe</span><span class="phase finish is-on">final</span></div>
+          <div class="chat"><p class="q">Why is the Mehta portfolio down this quarter?</p>
+            <div class="a"><span>Down 4.1% in Q3 against −1.6% for the benchmark, mostly from its 38.4% weight in IT stocks.</span><small>3 tool calls · 4.5 s · $0.035 · draft for your review</small></div></div>
+          <div class="phase-strip" aria-label="The agent loop"><span class="vc-think">think</span><span class="vc-act">act</span><span class="vc-observe">observe</span><span class="vc-final">final</span></div>
         </div>
       </div>
       <p class="small muted">The Mehta family and every figure in this guide are illustrative.</p>
@@ -70,7 +71,7 @@ function renderHome() {
           <div class="chips">${c.chips.map(([t, cls]) => `<span class="chip ${cls}">${t}</span>`).join("")}</div>
           <ul>${c.points.map(x => `<li>${x}</li>`).join("")}</ul>
           <div class="meta"><span data-minutes></span><span>${m.sections.length} sections</span>${c.meta.map(x => `<span>${x}</span>`).join("")}</div>
-          <div class="meter-row"><div class="meter" aria-hidden="true"><i data-meter></i></div><span class="mono small" data-read></span></div>
+          <div class="meter-row"><div class="v-cells" aria-hidden="true">${m.sections.map(() => "<i></i>").join("")}</div><span class="mono small" data-read></span></div>
           <span class="cta" aria-hidden="true" data-cta>Start module ${i + 1} →</span>
           ${c.hint ? `<p class="hint-line">${c.hint}</p>` : ""}
         </article>`;
@@ -97,7 +98,7 @@ function refreshHome(read) {
     const done = m.sections.filter(s => read.has(s.id)).length;
     const words = (m.el.textContent.match(/\S+/g) || []).length;
     $("[data-minutes]", card).textContent = `about ${Math.max(5, Math.round(words / 200 / 5) * 5)} min`;
-    $("[data-meter]", card).style.width = (done / m.sections.length * 100).toFixed(0) + "%";
+    $$(".v-cells i", card).forEach((c, j) => c.classList.toggle("is-read", read.has(m.sections[j].id)));
     $("[data-read]", card).textContent = `${done} of ${m.sections.length} read`;
     $("[data-cta]", card).textContent = done === m.sections.length ? `Review module ${i + 1} →` : done ? `Continue module ${i + 1} →` : `Start module ${i + 1} →`;
   });

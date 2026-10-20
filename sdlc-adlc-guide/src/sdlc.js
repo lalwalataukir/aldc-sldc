@@ -13,8 +13,10 @@ const SDLC_STAGES = [
     output: ["A one-page brief", "A roadmap item with a rough estimate", "A first success metric"],
     example: [
       "Relationship managers (the wealth managers who look after clients, called RMs here) spend about 20 minutes building a summary in a spreadsheet before every client meeting. The bank has 400 RMs.",
-      "The goal is a <strong>portfolio summary</strong> screen in the RM app that shows a client's total value, asset allocation and returns on one page. Success means prep time falls below 5 minutes. The engineering lead sizes it at about six weeks for two engineers.",
+      "The goal is a <strong>portfolio summary</strong> screen that shows a client's total value, allocation and returns on one page, and cuts prep time below 5 minutes. Engineering sizes it at about six weeks for two engineers.",
     ],
+    visual: () => `<div class="figs">${fig(hbars([{ l: "Prep time today", v: 20, d: "20 min", k: "bad" }, { l: "Goal with the new screen", v: 5, d: "5 min", k: "final" }], { max: 20 }) + `<div class="calc"><span>400 RMs</span>×<span>8 meetings a week</span>×<span>15 min saved</span>=<span><b>800 hours a week</b></span></div>`, "Sizing the opportunity: the time RMs spend on prep today, and what the goal frees up.", { illustrative: true, title: "Why it's worth building" })}
+      ${fig(hbars([{ l: "v1 as agreed", v: 6, d: "6 weeks", k: "accent" }, { l: "With every request added", v: 26, d: "about 6 months", k: "bad" }], { max: 26 }) + `<div class="v-chips"><em>Backlog: tax-loss ideas</em><em>Backlog: goal tracking</em><em>Backlog: client PDF</em></div>`, "Scope creep in one picture: three extra asks would have quadrupled the timeline, so they wait in the backlog.", { illustrative: true, title: "What protecting scope saves" })}</div>`,
     wrong: {
       title: "Scope creep",
       what: "In the planning review, stakeholders ask for tax-loss suggestions, goal tracking and a client-facing PDF. The six-week project quietly becomes six months. This is [[scope creep]].",
@@ -34,9 +36,15 @@ const SDLC_STAGES = [
     pm: ["Write the PRD and user stories", "Write acceptance criteria that can be tested", "Define every business term (what does “return” mean?)", "Review with design, engineering, QA and compliance", "Keep a list of open questions until each one has an owner"],
     output: ["PRD", "User stories with acceptance criteria", "Non-functional requirements (for example, loads in under 2 seconds)", "Definitions of business terms"],
     example: [
-      "<strong>User story:</strong> “As an RM, I want to see a client's total value, allocation and returns on one screen, so I can prepare for a meeting in minutes.”",
-      "<strong>Acceptance criteria:</strong> given a client with holdings, when the RM opens the summary, the total value matches the [[custodian]] statement at the last market close to the rupee. Allocation adds up to 100%. The screen loads in under 2 seconds for 95% of opens.",
+      "The PM turns the goal into one user story with three testable acceptance criteria, plus a definitions section that says exactly which return to show.",
     ],
+    visual: () => fig(`<div class="story"><div class="story-top"><b>PS-14</b><span>User story · portfolio summary v1</span></div>
+        <h4>See a client's whole portfolio on one screen</h4>
+        <p><q>As an RM, I want to see a client's total value, allocation and returns on one screen, so I can prepare for a meeting in minutes.</q></p>
+        <span class="eyebrow">Acceptance criteria</span>
+        <ul class="ac"><li>Total value matches the [[custodian]] statement at the last market close, to the rupee</li><li>Allocation adds up to 100%</li><li>The screen loads in under 2 seconds for 95% of opens</li></ul>
+        <div class="story-defs"><span class="eyebrow">Definitions · same client, same year, two answers</span>${hbars([{ l: "Absolute return", v: 6.2, d: "6.2%", k: "muted" }, { l: "XIRR (counts the ₹50,00,000 March top-up)", v: 9.1, d: "9.1%", k: "accent" }], { max: 10 })}</div></div>`,
+      "The user story as the team sees it in Jira. The definitions footer settles which return the screen shows.", { illustrative: true }),
     wrong: {
       title: "One word, two meanings",
       what: "The PRD says “show returns”. Engineering builds simple absolute return. The advisory team expects [[XIRR]], which accounts for when money went in and out. For a client who added ₹50,00,000 in March, the two numbers differ by several points.",
@@ -56,9 +64,12 @@ const SDLC_STAGES = [
     pm: ["Check every design against the requirements", "Bring user feedback to design reviews", "Make trade-offs when the ideal design costs too much", "Join technical design reviews and ask what could fail", "Confirm what's in v1 and what waits"],
     output: ["Wireframes and Figma mockups", "A clickable prototype", "Usability test notes", "A technical design document with the API contract"],
     example: [
-      "Top of the screen: total value and change since last close. Then a donut chart of allocation (equity, debt, gold, cash), a line chart of performance against a benchmark, and a table of the top 10 holdings.",
-      "Technical design: a new endpoint returns one summary per client. Prices come from the market-data feed and holdings from the portfolio system. Results are [[cache|cached]] after each market close so the screen loads fast.",
+      "Four parts on one screen: total value, an allocation donut, performance against a benchmark, and the top holdings. Behind it, one API call returns everything from a [[cache]] rebuilt after each market close.",
     ],
+    visual: () => fig(toggleViews("wire", [{ label: "Desktop mockup", html: wireframe("desktop") }, { label: "On a tablet", html: wireframe("tablet") }, { label: "Tablet, after the redesign", html: wireframe("fixed") }]),
+        "The portfolio summary wireframe. Switch to the tablet view to see what the usability test found, then the fix.", { interactive: true, illustrative: true })
+      + fig(flow([{ t: "RM app", s: "the frontend", k: "accent" }, { t: "Summary API", s: "GET /clients/{id}/summary", k: "think" }, { t: "Nightly cache", s: "rebuilt after market close", k: "observe" }, { t: "Source systems", chips: ["Portfolio system: holdings", "Market data: prices"], k: "muted" }], ["asks for one client", "reads", "refreshed from"]),
+        "The technical design: how the screen gets its numbers in one fast call."),
     wrong: {
       title: "It only works on a large screen",
       what: "The mockups look clean on a desktop monitor. Most RMs use a tablet in client meetings, where the holdings table overflows and the charts shrink until they can't be read.",
@@ -78,8 +89,10 @@ const SDLC_STAGES = [
     pm: ["Answer engineers' questions the same day", "Protect scope: new ideas go to the backlog", "Review work-in-progress demos", "Keep stakeholders updated on progress and risks", "Track [[tech debt]] the team chooses to take on"],
     output: ["Reviewed, merged code", "Automated tests", "A working build on a test environment", "Demo notes"],
     example: [
-      "The backend team builds the summary endpoint. The frontend team builds the charts and table. Below is the kind of response an engineer sees when the app asks for the Mehta family's summary.",
+      "The backend team builds the summary endpoint and the frontend team builds the charts. Every change travels the same path into the main code.",
     ],
+    visual: () => fig(flow([{ t: "Branch", s: "allocation-calc", k: "muted" }, { t: "Pull request #212", s: "the proposed change", k: "accent" }, { t: "CI runs tests", s: "1 unit test fails", k: "bad" }, { t: "Code review", s: "use market value, not cost", k: "act" }, { t: "Merged", s: "all tests pass", k: "final" }], ["opens", "triggers", "fix pushed", "approved"]),
+      "How one change reaches the main code. The failing test and the reviewer both catch the allocation bug before it's merged. Below: the response an engineer sees from the finished endpoint."),
     extra: code([
       '<span class="c">// GET /clients/CL-20417/summary  (illustrative response)</span>',
       '{',
@@ -110,8 +123,11 @@ const SDLC_STAGES = [
     pm: ["Make sure every acceptance criterion has a test", "Supply realistic test data and edge cases", "Decide which bugs block release", "Run or organise UAT with real RMs", "Sign off when the release criteria are met"],
     output: ["Test cases", "A test report with pass/fail results", "A list of bugs with priorities", "UAT sign-off"],
     example: [
-      "Test clients include a typical family, a client with 300 holdings, a client with US stocks priced in dollars, and a new client with no holdings yet. Each test compares the screen with the custodian statement for the same day.",
+      "QA runs every acceptance criterion against a set of test clients chosen to break things, and compares each screen with the custodian statement for the same day.",
     ],
+    visual: () => fig(`<div class="cov"><span class="h">Test client</span><span class="h">Value matches</span><span class="h">Allocation 100%</span><span class="h">Loads &lt; 2 s</span>
+        ${[["Typical family · 14 holdings", 1, 1, 1], ["Large · 300 holdings", 1, 1, 1], ["US stocks priced in dollars", 1, 1, 1], ["New client · 0 holdings", 0, 0, 0]].map(([n, ...r]) => `<span class="r">${n}</span>${r.map(x => `<span class="${x ? "ok" : "no"}">${x ? "Pass" : "Fail"}</span>`).join("")}`).join("")}</div>`,
+      "Test clients against acceptance criteria. One row of red is the release-blocking bug described below.", { illustrative: true }),
     wrong: {
       title: "The new client with nothing in the account",
       what: "A client who has just opened an account has zero holdings. The allocation calculation divides by a total of zero, and the whole screen fails to load.",
@@ -131,8 +147,14 @@ const SDLC_STAGES = [
     pm: ["Make the go or no-go call with engineering", "Write the [[release note]]", "Plan who gets it first", "Brief support and train users", "Watch the launch metrics on day one"],
     output: ["The release in production", "A release note", "A rollout plan", "A [[runbook]] for what to do if it breaks"],
     example: [
-      "Version 1.0 goes to 40 RMs in one branch through a feature flag. After a week of clean metrics and good feedback, the flag is opened to all 400 RMs.",
+      "Version 1.0 goes to 40 of 400 RMs behind a feature flag. When it slows down, the flag goes off within minutes, and a fixed version reaches everyone a week later.",
     ],
+    visual: () => {
+      const x = ["Mon 9:00", "10:00", "10:42", "10:47", "Thu", "Next Mon"];
+      const marks = [{ i: 2, l: "alert", k: "bad", left: true }, { i: 3, l: "flag off", k: "accent" }];
+      return `<div class="figs">${fig(lineChart({ x, step: true, series: [{ v: [0, 10, 10, 0, 10, 100], k: "accent", l: "RMs with the new screen", labels: [[1, "10%"], [5, "100%", false]] }], y: { min: 0, max: 100, ticks: [0, 50, 100], fmt: v => v + "%" }, marks }), "Share of RMs who see the new screen.", { illustrative: true, title: "Who has it" })}
+        ${fig(lineChart({ x, series: [{ v: [null, 1.6, 14.2, null, 1.4, 1.4], k: "bad", l: "p95 load time", labels: [[2, "14.2 s", false]] }], y: { min: 0, max: 16, ticks: [0, 4, 8, 12, 16], fmt: v => v + " s" }, goal: { v: 2, l: "target 2 s" }, marks }), "Load time for the slowest 5% of opens. The spike trips the alert; turning the flag off is the rollback.", { illustrative: true, title: "How fast it is" })}</div>`;
+    },
     wrong: {
       title: "Slow in production, fast everywhere else",
       what: "Production has far more data than staging. For clients with more than 200 holdings, the summary takes 14 seconds and some requests time out.",
@@ -152,8 +174,10 @@ const SDLC_STAGES = [
     pm: ["Run weekly bug triage", "Balance fixes against new features", "Review the success metric against the goal", "Collect feedback for the next version", "Retire features nobody uses"],
     output: ["Bug fixes and small patch releases", "A metrics review", "A backlog for version 1.1"],
     example: [
-      "Six weeks in, median prep time is 6 minutes, down from 20, but still above the 5-minute goal. RMs ask for a way to compare two dates. Both go into planning for version 1.1.",
+      "Six weeks in, prep time is down from 20 minutes to 6, still short of the 5-minute goal. That gap, and RMs' request to compare two dates, go into planning for version 1.1.",
     ],
+    visual: () => fig(lineChart({ x: ["Before", "Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6"], series: [{ v: [20, 12, 9, 8, 7, 6.5, 6], k: "accent", l: "Median prep time", labels: [[0, "20 min"], [6, "6 min", false]] }], y: { min: 0, max: 22, ticks: [0, 5, 10, 15, 20], fmt: v => v }, goal: { v: 5, l: "goal 5 min" }, marks: [{ i: 4, l: "stale-prices alert", k: "bad" }] }),
+      "Median meeting-prep time in minutes, week by week after launch. The success metric is close, not met.", { illustrative: true, title: "Is it working?" }),
     wrong: {
       title: "Stale prices that look fine",
       what: "The market-data vendor changes its file format. The nightly price update quietly fails, and the screen shows yesterday's prices as if they were current.",
@@ -186,8 +210,10 @@ MODULES.push({
       body: () => [
         prose(
           "The [[SDLC|software development life cycle]] is the sequence a team follows to turn an idea into working software and keep it working. It has seven stages: planning, requirements, design, build, testing, deployment and maintenance.",
-          "It exists because mistakes get more expensive the later you find them. A wrong assumption costs a conversation in planning, a redesign in design, a rewrite in build, and an apology in production. The SDLC puts the cheap checks first."
+          "It exists because mistakes get more expensive the later you find them, so the SDLC puts the cheap checks first."
         ),
+        fig(hbars([{ l: "Planning", v: 1, d: "1×", k: "accent" }, { l: "Requirements", v: 3, d: "3×", k: "accent" }, { l: "Design", v: 5, d: "5×", k: "accent" }, { l: "Build", v: 10, d: "10×", k: "accent" }, { l: "Testing", v: 15, d: "15×", k: "accent" }, { l: "In production", v: 65, d: "30–100×", k: "bad" }], { max: 65 }),
+          "Relative cost of fixing the same mistake, by the stage where it's found: a conversation, then a redesign, a rewrite, and finally an apology to users.", { illustrative: true, title: "The later you find it, the more it costs" }),
         grid(3, [
           box("The running example", p("A <strong>portfolio summary</strong> screen in the app RMs use. It pulls one client's holdings and shows the same fixed charts and numbers every time."), { tag: "Portfolio summary", accent: true }),
           box("Why it suits the SDLC", p("The output is fully predictable. The same holdings always give the same total, so you can write exact rules and test them with a clear pass or fail.")),
@@ -206,28 +232,38 @@ MODULES.push({
     },
     ...SDLC_STAGES.map((s, i) => ({
       id: s.id, rail: s.rail, eyebrow: `Stage ${i + 1} of 7 · ${s.name}`, title: s.title, intro: s.intro,
-      body: () => stageBody(s, "Portfolio summary"), remember: SDLC_REMEMBER[i],
+      body: () => stageBody(s, "Portfolio summary", i, SDLC_STAGES, "SDLC lifecycle"), remember: SDLC_REMEMBER[i],
     })),
     {
       id: "sdlc-methods", rail: "Methods", eyebrow: "Section 10 · Ways of working",
       title: "Waterfall, Agile, Scrum and Kanban",
       intro: "The seven stages are always there. Methodologies differ in how big each pass through them is, and how often the team loops.",
       body: () => [
+        fig(`<div class="wa">
+          <div class="wa-row"><b>Waterfall</b><div class="wa-track">${[["Plan", 1, "think"], ["Requirements", 2, "observe"], ["Design", 2, "act"], ["Build", 4, "graph"], ["Test", 2, "final"], ["Release", 1, "accent"]].map(([t, w, k], i, a) => `<span class="${VC(k)}${i === a.length - 1 ? " ship" : ""}" style="--w:${w}">${t}</span>`).join("")}</div></div>
+          <div class="wa-row"><b>Agile</b><div class="wa-track">${[1, 2, 3, 4, 5, 6].map(n => `<span class="vc-accent ship" style="--w:2">Sprint ${n}</span>`).join("")}</div></div>
+          <div class="wa-axis"><span></span><span><em>Week 1</em><em>Week 12</em></span></div></div>`,
+          "The same 12 weeks, two ways. Waterfall makes one pass and users see something at the end; Agile ships a working piece every two weeks (green dot) and adjusts as it learns.", { title: "One big pass, or many small ones" }),
         grid(2, [
-          box("Waterfall", p("Each stage finishes completely before the next starts: all requirements, then all design, then all build. Change late in the project is expensive.") + p("<strong>Fits when</strong> requirements are fixed and known up front, such as a regulator-mandated report format with a hard deadline."), { tag: "One big pass" }),
-          box("Agile", p("A mindset rather than a process. [[Agile]] means building in small increments, showing working software often, and changing the plan as you learn.") + p("<strong>Fits when</strong> you'll learn what users need by putting something in front of them, which is most product work."), { tag: "Many small passes", accent: true }),
-          box("Scrum", p("A popular way to do Agile. Work happens in fixed [[sprint|sprints]], usually two weeks long, with set meetings and roles: a product owner (often the PM) and a scrum master who runs the process.") + p("<strong>Fits when</strong> a stable team builds a product over months and benefits from a steady rhythm."), { tag: "Fixed timeboxes" }),
-          box("Kanban", p("Work flows across a board (to do, in progress, done) with no sprints. The team caps how many items can be in progress at once, called a [[WIP limit]].") + p("<strong>Fits when</strong> work arrives unpredictably, like support fixes and small data requests."), { tag: "Continuous flow" }),
+          box("Waterfall", p("Each stage finishes before the next starts. <strong>Fits when</strong> requirements are fixed up front, like a regulator-mandated report."), { tag: "One big pass" }),
+          box("Agile", p("[[Agile]] means small increments, shown often, with the plan changing as you learn. <strong>Fits</strong> most product work."), { tag: "Many small passes", accent: true }),
+          box("Scrum", p("A popular way to do Agile, with fixed [[sprint|sprints]] and set meetings. <strong>Fits</strong> a stable team building over months."), { tag: "Fixed timeboxes" }),
+          box("Kanban", p("Work flows across a board with a cap on work in progress, a [[WIP limit]]. <strong>Fits</strong> unpredictable work like support fixes."), { tag: "Continuous flow" }),
         ]),
+        fig(`<div class="kanban">
+          <div><h5>To do</h5><p>Compare two dates<em>PS-31 · story</em></p><p>Export summary as PDF<em>PS-27 · story</em></p><p>Rename “Other” asset class<em>PS-35 · bug</em></p></div>
+          <div><h5>In progress <b>3 of 3</b></h5><p>Show REITs as their own asset class<em>PS-29 · story</em></p><p>“Prices as of” label<em>PS-33 · bug</em></p><p>Faster load for 300+ holdings<em>PS-30 · tech debt</em></p></div>
+          <div><h5>Done</h5><p>Zero-holdings empty state<em>PS-22 · bug</em></p><p>XIRR definition in tooltip<em>PS-24 · story</em></p></div></div>`,
+          "A Kanban board for the summary screen after launch. “In progress” is full at its WIP limit of 3, so nothing new starts until something finishes.", { illustrative: true, title: "Kanban: pull work, cap what's in progress" }),
         sub("The Scrum rhythm in one two-week sprint"),
         `<div class="sprint" role="img" aria-label="A ten-working-day sprint: planning on day 1, daily standups, backlog grooming on day 6, review and retro on day 10">${["Plan", "Standup", "Standup", "Standup", "Standup", "Groom", "Standup", "Standup", "Standup", "Review · Retro"].map((t, i) => `<div class="${[0, 5, 9].includes(i) ? "hi" : ""}"><b>D${i + 1}</b>${t}</div>`).join("")}</div>`,
         grid(2, [
-          box("Sprint and sprint planning", p("A [[sprint]] is a fixed period, usually two weeks, in which the team commits to finishing a set of stories. In sprint planning on day one, the team pulls the top stories from the [[backlog]] (the ranked list of all future work) and estimates them in [[story points]].")),
-          box("Daily standup", p("A [[standup]] is a 15-minute daily check-in. Each person says what they did, what's next, and what is blocking them. As PM, listen for blockers you can clear, such as a missing definition or a slow approval.")),
-          box("Backlog grooming", p("Also called refinement. Mid-sprint, the PM and team review upcoming stories so they're clear, estimated and ready. A story is ready when its acceptance criteria are written and its questions answered.")),
-          box("Sprint review and retro", p("In the review, the team demos what it finished to stakeholders. In the [[retrospective|retro]], the team discusses only how it worked: what went well, what didn't, and one thing to change next sprint.")),
+          box("Sprint planning · day 1", p("The team pulls the top stories from the [[backlog]] and estimates them in [[story points]].")),
+          box("Daily standup · 15 minutes", p("A [[standup]]: done, next, blocked. Listen for blockers you can clear.")),
+          box("Backlog grooming · mid-sprint", p("Make the next stories ready: acceptance criteria written, questions answered.")),
+          box("Review and retro · last day", p("Demo what's finished, then a [[retrospective|retro]] on how the team worked.")),
         ]),
-        callout("For the portfolio summary.", "The team ran three two-week sprints. Sprint 1 built the API and the total value card. Sprint 2 built the charts. Sprint 3 built the holdings table and fixed bugs. Each sprint ended with a demo to five RMs."),
+        callout("For the portfolio summary.", "Three two-week sprints: the API and value card, then the charts, then the holdings table and bug fixes, each ending with a demo to five RMs."),
       ].join(""),
       remember: "Pick the method that matches how predictable your work is. Most product teams use a flavour of Agile.",
     },
@@ -236,11 +272,17 @@ MODULES.push({
       title: "Four kinds of test, from small to whole",
       intro: "Tests come in sizes. Small tests are fast and many; large tests are slow and few. Together they catch different problems.",
       body: () => [
-        grid(2, [
-          box("Unit test", p("Checks one small piece of code on its own, such as the function that calculates allocation. It runs in milliseconds, and teams have thousands.") + p("<strong>Example:</strong> holdings worth ₹64 and ₹36 give an allocation of 64% and 36%."), { tag: "Smallest · fastest" }),
-          box("Integration test", p("An [[integration test]] checks that two parts work together, such as the summary API and the portfolio [[database]].") + p("<strong>Example:</strong> asking the API for client CL-20417 returns the 14 holdings stored for that client.")),
-          box("End-to-end test", p("An [[end-to-end test]] drives the real app the way a user would, from login to the finished screen, usually with an automated browser.") + p("<strong>Example:</strong> an RM logs in, searches “Mehta”, opens the summary, and sees ₹4,82,60,000.")),
-          box("User acceptance testing", p("[[UAT]] is when real users try the finished feature on realistic data and confirm it solves their problem. It is the last check before release, and the PM usually owns it.") + p("<strong>Example:</strong> five RMs prepare for real upcoming meetings using only the new screen."), { tag: "Largest · human", accent: true }),
+        fig(pyramid([
+          { t: "User acceptance testing", meta: "5 real RMs · days · owned by the PM", k: "accent" },
+          { t: "End-to-end tests", meta: "about 12 journeys · minutes · QA", k: "act" },
+          { t: "Integration tests", meta: "about 60 checks · seconds · engineers", k: "observe" },
+          { t: "Unit tests", meta: "thousands · milliseconds · engineers", k: "think" },
+        ]), "The test pyramid: many fast, cheap tests at the bottom, a few slow, human ones at the top.", { illustrative: true }),
+        dl([
+          ["Unit test · one function", "Holdings worth ₹64 and ₹36 give an allocation of 64% and 36%."],
+          ["[[integration test|Integration test]] · two parts together", "Asking the API for client CL-20417 returns the 14 holdings stored for that client in the [[database]]."],
+          ["[[end-to-end test|End-to-end test]] · a whole journey", "An automated browser logs in as an RM, searches “Mehta”, opens the summary and sees ₹4,82,60,000."],
+          ["[[UAT]] · real users", "Five RMs prepare for real upcoming meetings using only the new screen."],
         ]),
         sub("What a test report looks like"),
         log([
@@ -252,8 +294,8 @@ MODULES.push({
           ["09:16:12", "e-res", "PASS", "e2e/usd_holdings_converted_at_close_rate"],
           ["09:16:30", "e-run", "suite_end", "141 passed · 1 failed · release blocked"],
         ]),
-        callout("What pass/fail means.", "A test sets up an input, runs the code, and compares the actual result with the expected result. If they match, it passes; if not, it fails. Because regular software is [[deterministic]] (the same input always gives the same output), one failing test is a real bug, not bad luck. A failing test blocks the release until someone fixes it or decides, in writing, to accept it."),
-        p("Teams also run [[regression testing]]: re-running all the old tests after every change to prove nothing that used to work has broken."),
+        callout("What pass/fail means.", "A test compares the actual result with the expected one: match is a pass, anything else a fail. Regular software is [[deterministic]], so one failing test is a real bug, not bad luck, and it blocks the release until it's fixed or accepted in writing."),
+        p("[[regression testing|Regression testing]] re-runs all the old tests after every change, to prove nothing that used to work has broken."),
       ].join(""),
       remember: "Ask “which test would catch this?” for every risk. If none would, add one.",
     },
@@ -262,14 +304,17 @@ MODULES.push({
       title: "Staging, flags, rollbacks, triage and versions",
       intro: "Shipping is not one moment. These five practices make releases safe to do often.",
       body: () => [
+        fig(flow([{ t: "Code", s: "merged to main", k: "muted" }, { t: "CI", s: "tests pass", k: "final" }, { t: "Staging", s: "rehearsal copy, masked data", k: "observe" }, { t: "Production", s: "the real system", k: "accent", chips: ["flag: 10% of RMs", "then 100%"] }], ["builds", "deploys", "deploys behind a flag"])
+          + `<div class="habit"><b>Rollback</b><span>Production misbehaves</span><span aria-hidden="true">→</span><span class="bad">flag off or previous version</span><span>in minutes, then fix calmly on staging</span></div>`,
+          "The path every release takes. The flag decides who sees it; the rollback is the way back.", { title: "From merged code to real users" }),
         grid(2, [
-          box("Staging versus production", p("[[staging|Staging]] is a full copy of the system with fake or masked data, used to rehearse a release. [[production|Production]] is the real system that RMs and clients use. Staging should match production as closely as possible. The day-one slowdown in the deployment stage happened because it didn't.")),
-          box("Feature flags", p("A [[feature flag]] lets the team ship code that stays switched off, then turn it on for 10% of users, one branch, or only internal staff. It separates “the code is deployed” from “users can see it”.")),
-          box("Rollbacks", p("A [[rollback]] returns production to the last good version. A team that can roll back in five minutes can afford to release often. If the fix has to go out in a hurry instead, that's a [[hotfix]].")),
-          box("Versioning", p("[[semantic versioning|Semantic versioning]] numbers each release MAJOR.MINOR.PATCH.") + `<div class="versions" aria-label="Version 2.3.1"><span class="ma">2</span>.<span class="mi">3</span>.<span class="pa">1</span></div>` + p("Major means a big change that may break things. Minor means a new feature. Patch means a bug fix. The portfolio summary launched as 1.0.0, and the date comparison will ship as 1.1.0.")),
+          box("Staging versus production", p("[[staging|Staging]] rehearses the release; [[production|production]] is the real thing. Make them match, including data size.")),
+          box("Feature flags", p("A [[feature flag]] separates “deployed” from “visible”: ship it off, then turn it on for 10%, a branch, or staff.")),
+          box("Rollbacks", p("A [[rollback]] returns to the last good version. If a fix must go out fast instead, that's a [[hotfix]].")),
+          box("Versioning", `<div class="versions" aria-label="Version 2.3.1"><span class="ma">2</span>.<span class="mi">3</span>.<span class="pa">1</span></div>` + p("[[semantic versioning|Semantic versioning]]: MAJOR (may break things) . MINOR (new feature) . PATCH (bug fix). The summary launched as 1.0.0.")),
         ]),
         sub("Bug triage: deciding what to fix first"),
-        p("In [[bug triage]], the team ranks each new bug by how bad it is and how many people it hits. A common scale:"),
+        p("In [[bug triage]], the team ranks each new bug by how bad it is and how many people it hits:"),
         `<div class="prio-row">
           <div class="prio p0c"><span class="pt"><span class="pb p0">P0</span>Drop everything</span><p>Wrong money figures, data shown to the wrong user, or the screen is down for everyone.</p><span class="rule">Fix now · hotfix or rollback</span></div>
           <div class="prio p1c"><span class="pt"><span class="pb p1">P1</span>Fix this sprint</span><p>A key flow is broken for some users, such as dollar holdings shown in the wrong currency.</p><span class="rule">Next release</span></div>
@@ -283,15 +328,15 @@ MODULES.push({
       title: "The tools you'll see at each stage",
       intro: "Most teams use some version of these. Names vary by company; the jobs are the same.",
       body: () => [
-        table(["Tool", "What it's for", "Stages", "What you'll do in it as PM"], [
-          ["Jira", "Tracks the backlog, stories, bugs and sprints as tickets on a board.", "Planning to maintenance", "Write stories, rank the backlog, triage bugs"],
-          ["Confluence", "A shared wiki for long documents.", "Planning, requirements, design", "Write the PRD, decision logs and release notes"],
-          ["Figma", "Design files and clickable prototypes.", "Design", "Comment on designs, run prototype tests"],
-          ["GitHub", "Hosts the code repository, pull requests and code reviews.", "Build, testing", "Read pull request descriptions; link them to stories"],
-          ["CI/CD pipeline", "[[CI/CD]] tools such as GitHub Actions or Jenkins run tests on every change and deploy passing code.", "Build, testing, deployment", "Check whether a release is blocked and why"],
-          ["Sentry or similar", "[[error tracking|Error tracking]]: records every crash with details of where it happened.", "Deployment, maintenance", "Watch error counts on launch day; feed triage"],
-          ["Dashboards", "Usage and speed charts, for example in Datadog, Grafana or Amplitude.", "Deployment, maintenance", "Track the success metric and adoption"],
-        ], "SDLC tools by stage"),
+        fig(swimlane(SDLC_STAGES.map(s => s.name), [
+          { t: "Jira", from: 0, to: 6, k: "accent", note: "Tracks the backlog, stories, bugs and sprints as tickets. You'll write stories, rank the backlog and triage bugs here." },
+          { t: "Confluence", from: 0, to: 2, k: "observe", note: "A shared wiki for long documents. You'll write the PRD, decision logs and release notes here." },
+          { t: "Figma", from: 2, to: 2, k: "graph", note: "Design files and clickable prototypes. You'll comment on designs and run prototype tests." },
+          { t: "GitHub", from: 3, to: 4, k: "think", note: "Hosts the code, pull requests and reviews. You'll read pull request descriptions and link them to stories." },
+          { t: "CI/CD", from: 3, to: 5, k: "final", note: "[[CI/CD]] tools such as GitHub Actions run tests on every change and deploy passing code. You'll check whether a release is blocked and why." },
+          { t: "Sentry", from: 5, to: 6, k: "bad", note: "[[error tracking|Error tracking]]: every crash, with where it happened. You'll watch error counts on launch day and feed triage." },
+          { t: "Dashboards", from: 5, to: 6, k: "act", note: "Usage and speed charts in tools like Datadog or Amplitude. You'll track the success metric and adoption." },
+        ], "sdlc"), "Which tool is used across which stages. Tap a tool to see what you'll do in it as PM.", { interactive: true }),
       ].join(""),
       remember: "Learn where your team keeps the truth: tickets in Jira, decisions in Confluence, code in GitHub, errors in Sentry.",
     },
@@ -313,7 +358,7 @@ MODULES.push({
       title: "SDLC cheat sheet",
       intro: "Everything in this module on one page.",
       body: () => cheatSheet({
-        eyebrow: "Module 1 · SDLC", title: "The SDLC on one page",
+        eyebrow: "Module 1 · SDLC", title: "The SDLC on one page", visual: () => miniLifecycles("sdlc"),
         formula: "Plan → <em>Requirements</em> → Design → Build → <em>Test</em> → Deploy → Maintain → plan again",
         blocks: [
           { h: "Stage → main output", ordered: true, items: ["Planning → brief, goal, success metric", "Requirements → PRD, user stories, acceptance criteria", "Design → mockups, prototype, technical design", "Build → reviewed code and tests", "Testing → test report, bug list, UAT sign-off", "Deployment → release, release note, runbook", "Maintenance → fixes, metrics review, next backlog"] },
